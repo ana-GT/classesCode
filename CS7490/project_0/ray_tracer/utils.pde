@@ -37,13 +37,14 @@ class ray {
 };
 
 
-//*********************************************************************
-//**                      3D geeomtry tools                          **
-//**       Jarek Rossignac, October 2010, updates Oct 2011           **   
-//**                 (points, vectors, and more)                     **   
-//*********************************************************************
+// Geometry tools I used on my class in  Fall 2012 - CS 4640 (Computer Graphics)
+// A bunch of these are based on the Geometry tools file from **Prof. Jarek Rossignac**, which were provided for us to customize to make things easier.
+// I do not use any rendering function from here. Only functions such as
+// .dot, .mult and vector / points operations were used. 
+// PS.- I suppose I could just copied and pasted taking out the author's name, but
+// that would be misleading. Hope it is okay.
 
-// ===== vector class
+/**< Class vec */
 class vec { float x=0,y=0,z=0; 
    vec () {}; 
    vec (float px, float py, float pz) {x = px; y = py; z = pz;};
@@ -61,7 +62,7 @@ class vec { float x=0,y=0,z=0;
    vec rotate(float a, vec I, vec J) {float x=d(this,I), y=d(this,J); float c=cos(a), s=sin(a); add(x*c-x-y*s,I); add(x*s+y*c-y,J); return this; }; // Rotate by a in plane (I,J)
    } ;
   
-// ===== vector functions
+/**< Vector functions */
 vec V() {return new vec(); };                                                                          // make vector (x,y,z)
 vec V(float x, float y, float z) {return new vec(x,y,z); };                                            // make vector (x,y,z)
 vec V(vec V) {return new vec(V.x,V.y,V.z); };                                                          // make copy of vector V
@@ -86,7 +87,7 @@ vec R(vec V) {return V(-V.y,V.x,V.z);} // rotated 90 degrees in XY plane
 vec R(vec V, float a, vec I, vec J) {float x=d(V,I), y=d(V,J); float c=cos(a), s=sin(a); return A(V,V(x*c-x-y*s,I,x*s+y*c-y,J)); }; // Rotated V by a parallel to plane (I,J)
 
 
-// ===== point class
+/**< Point class */
 class pt { float x=0,y=0,z=0; 
    pt () {}; 
    pt (float px, float py, float pz) {x = px; y = py; z = pz; };
@@ -102,10 +103,9 @@ class pt { float x=0,y=0,z=0;
    pt div(float f) {x/=f; y/=f; z/=f; return this;};
    pt div(int f) {x/=f; y/=f; z/=f; return this;};
    pt snap(float r) {float f=r/(sqrt(sq(x)+sq(y)+sq(z))); x*=f; y*=f; z*=f; return this;};
-//   void projectOnCylinder(pt A, pt B, float r) {pt H = S(A,d(V(A,B),V(A,this))/d(V(A,B),V(A,B)),B); this.setTo(T(H,r,this));}
    }
-//  void projectOnCylinder(pt A, pt B, float r) {pt H = S(A,d(V(A,B),V(A,this))/d(V(A,B),V(A,B)),B); this.setTo(T(H,r,this));}   
-// =====  point functions
+ 
+/**  point functions */
 pt P() {return new pt(); };                                            // point (x,y,z)
 pt P(float x, float y, float z) {return new pt(x,y,z); };                                            // point (x,y,z)
 pt P(pt A) {return new pt(A.x,A.y,A.z); };                                                           // copy of point P
@@ -127,77 +127,6 @@ void makePts(pt[] C) {for(int i=0; i<C.length; i++) C[i]=P();} // fills array C 
 pt Predict(pt A, pt B, pt C) {return P(B,V(A,C)); };     // B+AC, parallelogram predictor
 void v(pt P) {vertex(P.x,P.y,P.z);} // rendering
 
-
-// ===== mouse tools
-pt Mouse() {return P(mouseX,mouseY,0);};                                          // current mouse location
-pt Pmouse() {return P(pmouseX,pmouseY,0);};
-vec MouseDrag() {return V(mouseX-pmouseX,mouseY-pmouseY,0);};                     // vector representing recent mouse displacement
-
-// ===== measures
-float d(vec U, vec V) {return U.x*V.x+U.y*V.y+U.z*V.z; };                                            //U*V dot product
-float d(pt P, pt Q) {return sqrt(sq(Q.x-P.x)+sq(Q.y-P.y)+sq(Q.z-P.z)); };                            // ||AB|| distance
-float d2(pt P, pt Q) {return sq(Q.x-P.x)+sq(Q.y-P.y)+sq(Q.z-P.z); };                                 // AB^2 distance squared
-float m(vec U, vec V, vec W) {return d(U,N(V,W)); };                                                 // (UxV)*W  mixed product, determinant
-float m(pt E, pt A, pt B, pt C) {return m(V(E,A),V(E,B),V(E,C));}                                    // det (EA EB EC) is >0 when E sees (A,B,C) clockwise
-float n2(vec V) {return sq(V.x)+sq(V.y)+sq(V.z);};                                                   // V*V    norm squared
-float n(vec V) {return sqrt(n2(V));};                                                                // ||V||  norm
-float area(pt A, pt B, pt C) {return n(N(A,B,C))/2; };                                               // area of triangle 
-float volume(pt A, pt B, pt C, pt D) {return m(V(A,B),V(A,C),V(A,D))/6; };                           // volume of tet 
-boolean parallel (vec U, vec V) {return n(N(U,V))<n(U)*n(V)*0.00001; }                               // true if U and V are almost parallel
-float angle(vec U, vec V) {return acos(d(U,V)/n(V)/n(U)); };                                         // angle(U,V)
-boolean cw(vec U, vec V, vec W) {return m(U,V,W)>=0; };                                              // (UxV)*W>0  U,V,W are clockwise
-boolean cw(pt A, pt B, pt C, pt D) {return volume(A,B,C,D)>=0; };                                    // tet is oriented so that A sees B, C, D clockwise 
-
-// ===== rotate 
-
-// ===== render
-void normal(vec V) {normal(V.x,V.y,V.z);};                                          // changes normal for smooth shading
-void vertex(pt P) {vertex(P.x,P.y,P.z);};                                           // vertex for shading or drawing
-
-
-// ==== curve
-void bezier(pt A, pt B, pt C, pt D) {bezier(A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z,D.x,D.y,D.z);} // draws a cubic Bezier curve with control points A, B, C, D
-void bezier(pt [] C) {bezier(C[0],C[1],C[2],C[3]);} // draws a cubic Bezier curve with control points A, B, C, D
-pt bezierPoint(pt[] C, float t) {return P(bezierPoint(C[0].x,C[1].x,C[2].x,C[3].x,t),bezierPoint(C[0].y,C[1].y,C[2].y,C[3].y,t),bezierPoint(C[0].z,C[1].z,C[2].z,C[3].z,t)); }
-vec bezierTangent(pt[] C, float t) {return V(bezierTangent(C[0].x,C[1].x,C[2].x,C[3].x,t),bezierTangent(C[0].y,C[1].y,C[2].y,C[3].y,t),bezierTangent(C[0].z,C[1].z,C[2].z,C[3].z,t)); }
-void PT(pt P0, vec T0, pt P1, vec T1) {float d=d(P0,P1)/3;  bezier(P0, P(P0,-d,U(T0)), P(P1,-d,U(T1)), P1);} // draws cubic Bezier interpolating  (P0,T0) and  (P1,T1) 
-void PTtoBezier(pt P0, vec T0, pt P1, vec T1, pt [] C) {float d=d(P0,P1)/3;  C[0].set(P0); C[1].set(P(P0,-d,U(T0))); C[2].set(P(P1,-d,U(T1))); C[3].set(P1);} // draws cubic Bezier interpolating  (P0,T0) and  (P1,T1) 
-vec vecToCubic (pt A, pt B, pt C, pt D, pt E) {return V( (-A.x+4*B.x-6*C.x+4*D.x-E.x)/6, (-A.y+4*B.y-6*C.y+4*D.y-E.y)/6, (-A.z+4*B.z-6*C.z+4*D.z-E.z)/6);}
-vec vecToProp (pt B, pt C, pt D) {float cb=d(C,B);  float cd=d(C,D); return V(C,P(B,cb/(cb+cd),D)); };  
-
-// ==== perspective
-pt Pers(pt P, float d) { return P(d*P.x/(d+P.z) , d*P.y/(d+P.z) , d*P.z/(d+P.z) ); };
-
-pt InverserPers(pt P, float d) { return P(d*P.x/(d-P.z) , d*P.y/(d-P.z) , d*P.z/(d-P.z) ); };
-
-// ==== intersection
-boolean intersect(pt P, pt Q, pt A, pt B, pt C, pt X)  {return intersect(P,V(P,Q),A,B,C,X); } // if (P,Q) intersects (A,B,C), return true and set X to the intersection point
-
-boolean intersect(pt E, vec T, pt A, pt B, pt C, pt X) { // if ray from E along T intersects triangle (A,B,C), return true and set X to the intersection point
-  vec EA=V(E,A), EB=V(E,B), EC=V(E,C), AB=V(A,B), AC=V(A,C); 
-  boolean s=cw(EA,EB,EC), sA=cw(T,EB,EC), sB=cw(EA,T,EC), sC=cw(EA,EB,T); 
-  if ( (s==sA) && (s==sB) && (s==sC) ) return false;
-  float t = m(EA,AC,AB) / m(T,AC,AB);
-  X.set(P(E,t,T));
-  return true;
-  }
-  
-boolean rayIntersectsTriangle(pt E, vec T, pt A, pt B, pt C) { // true if ray from E with direction T hits triangle (A,B,C)
-  vec EA=V(E,A), EB=V(E,B), EC=V(E,C); 
-  boolean s=cw(EA,EB,EC), sA=cw(T,EB,EC), sB=cw(EA,T,EC), sC=cw(EA,EB,T); 
-  return  (s==sA) && (s==sB) && (s==sC) ;}
-  
-boolean edgeIntersectsTriangle(pt P, pt Q, pt A, pt B, pt C)  {
-  vec PA=V(P,A), PQ=V(P,Q), PB=V(P,B), PC=V(P,C), QA=V(Q,A), QB=V(Q,B), QC=V(Q,C); 
-  boolean p=cw(PA,PB,PC), q=cw(QA,QB,QC), a=cw(PQ,PB,PC), b=cw(PA,PQ,PC), c=cw(PQ,PB,PQ); 
-  return (p!=q) && (p==a) && (p==b) && (p==c);
-  }
-  
-float rayParameterToIntersection(pt E, vec T, pt A, pt B, pt C) {vec AE=V(A,E), AB=V(A,B), AC=V(A,C); return - m(AE,AC,AB) / m(T,AC,AB);}
-   
-
-
-float toRad(float a) {return(a*PI/180);}      
-int toDeg(float a) {return int(a*180/PI);}  
-
-
+/**< Measurements */
+float d(vec U, vec V) {return U.x*V.x+U.y*V.y+U.z*V.z; }; //U*V dot product
+float d(pt P, pt Q) {return sqrt(sq(Q.x-P.x)+sq(Q.y-P.y)+sq(Q.z-P.z)); }; // ||AB|| distance
