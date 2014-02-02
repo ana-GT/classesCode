@@ -12,9 +12,16 @@ int sSphereType = 1;
 
 Environment gEnv = new Environment();
 RayTracer gRayTracer = new RayTracer();
-
-// the current active file name
-String gCurrentFile = new String("rect_test.cli");   
+ 
+ 
+ // Interpreter variables ------------------
+   boolean readingPolygon;
+  Triangle triangle = new Triangle();
+  int polygonIndex;
+  float  cdr, cdg, cdb, car, cag, cab;
+  naiveStack mStack;
+  PMatrix3D mMat;
+  // -----------------------------------------
 
 
 /**
@@ -26,7 +33,7 @@ void setup() {
   noStroke();
   colorMode (RGB, 255);
   background (0, 0, 0);
-  interpreter();
+  interpreter("rect_test.cli");
 }
 
 /**
@@ -34,41 +41,32 @@ void setup() {
  * @brief Press key 1 to 9 and 0 to run different test cases.
  */
 void keyPressed() {
+  initInterpreter();
   switch(key) {
-    case '1':  gCurrentFile = new String("t0.cli"); interpreter(); break;
-    case '2':  gCurrentFile = new String("t1.cli"); interpreter(); break;
-    case '3':  gCurrentFile = new String("c0.cli"); interpreter(); break;
-    case '4':  gCurrentFile = new String("c1.cli"); interpreter(); break;
-    case '5':  gCurrentFile = new String("c2.cli"); interpreter(); break;
-    case '6':  gCurrentFile = new String("c3.cli"); interpreter(); break;
+    case '1':  interpreter("t01.cli"); break;
+    case '2':  interpreter("t02.cli"); break;
+    case '3':  interpreter("t03.cli"); break;
+    case '4':  interpreter("t04.cli"); break;
+    case '5':  interpreter("t05.cli"); break;
+    case '6':  interpreter("t06.cli"); break;
+    case '7':  interpreter("t07.cli"); break;
+    case '8':  interpreter("t08.cli"); break;
+    case '9':  interpreter("t09.cli"); break;
+    case '0':  interpreter("t10.cli"); break;
+    case 'q':  exit(); break;
   }
 }
+
+
 
 /** 
  * @function interpreter
  * @brief  Parser core. It parses the CLI file and processes it based on each 
  *  token.
  */
-void interpreter() {
+void interpreter(String filename) {
   
-  boolean readingPolygon;
-  Triangle triangle = new Triangle();
-  int polygonIndex;
-  float  cdr, cdg, cdb, car, cag, cab;
-  
-  // Initialize values
-  readingPolygon = false;
-  polygonIndex = 0;
-  cdr = 1.0; cdg = 0.0; cdb = 0.0;
-  car = 0.1; cag = 0.9; cab = 0.0;
-  
-  // Reset environment
-  gEnv.resetEnvironment();
-  
-  // Set ray tracer with global vars
-  gRayTracer.setPixelDims( screen_width, screen_height );
-  
-  String str[] = loadStrings(gCurrentFile);
+  String str[] = loadStrings(filename);
   
   /** If no file is loaded, display error message and exit */
   if (str == null) {
@@ -98,7 +96,7 @@ void interpreter() {
     }
     
     /** Add a light source to the environment */
-    else if (token[0].equals("light")) {
+    else if (token[0].equals("point_light")) {
       float x, y, z, r, g, b;
       x = Float.parseFloat(token[1]);
       y = Float.parseFloat(token[2]);
@@ -141,7 +139,13 @@ void interpreter() {
       vy = Float.parseFloat(token[2]);
       vz = Float.parseFloat(token[3]);    
         
-      triangle.addVertex( polygonIndex, vx, vy, vz );
+      // Apply matrix in stack
+      float[] vm = new float[3];
+      float[] v = new float[3];
+      v[0] = vx; v[1] = vy; v[2] = vz;
+      mMat.mult( v, vm  );        
+        
+      triangle.addVertex( polygonIndex, vm[0], vm[1], vm[2] );
       polygonIndex++;
     }
     
@@ -152,8 +156,15 @@ void interpreter() {
       x = Float.parseFloat( token[2] );
       y = Float.parseFloat( token[3] );
       z = Float.parseFloat( token[4] );
+      
+      // Apply matrix in stack
+      float[] pm = new float[3];
+      float[] p = new float[3];
+      p[0] = x; p[1] = y; p[2] = z;
+      mMat.mult( p, pm  );
+      
       Sphere sphere = new Sphere();
-      sphere.set( r, x, y, z );
+      sphere.set( r, pm[0], pm[1], pm[2] );
       sphere.setDiffuseCoeff( cdr, cdg, cdb );
       sphere.setAmbienceCoeff( car, cag, cab );
       
@@ -162,35 +173,59 @@ void interpreter() {
     
     /** Stack operations */
     else if (token[0].equals("push")) {
- 
+      mStack.push( mMat );
     }    
     
    /** Stack operations */
     else if (token[0].equals("pop")) {
- 
+      PMatrix3D mat = new PMatrix3D();
+      mat = mStack.pop();
+      mMat.set( mat );
     }        
     
        /** Translate */
     else if (token[0].equals("translate")) {
- 
+      float x, y, z;
+      x = Float.parseFloat( token[1] );
+      y = Float.parseFloat( token[2] );
+      z = Float.parseFloat( token[3] );
+      mMat.translate(x,y,z);
     }    
     
-      /** Translate */
+      /** Scale */
     else if (token[0].equals("scale")) {
- 
+      float x, y, z;
+      x = Float.parseFloat( token[1] );
+      y = Float.parseFloat( token[2] );
+      z = Float.parseFloat( token[3] );      
+      mMat.scale(x,y,z); 
     }    
     
      /** Rotate */
     else if (token[0].equals("rotate")) {
- 
+      float angle, x, y, z;
+      angle = Float.parseFloat( token[1] );
+      x = Float.parseFloat( token[2] );
+      y = Float.parseFloat( token[3] );
+      z = Float.parseFloat( token[4] );
+      mMat.rotate( radians(angle), x, y, z );
     }    
     
+   /** reads input from another file */
+    else if (token[0].equals("read")) {
+      interpreter(token[1]);
+    }
+
     /** Dummy parse */
     else if (token[0].equals("color")) {
       float r = float(token[1]);
       float g = float(token[2]);
       float b = float(token[3]);
-      fill(r, g, b);
+      int ri, gi, bi;
+      ri = (int)(255.0*r);
+      gi = (int)(255.0*g);
+      bi = (int)(255.0*b);      
+      fill(ri, gi, bi);
     }
     
     /** Dummy parse */
@@ -204,24 +239,48 @@ void interpreter() {
     
     /** Save the current image to a .png file */
     else if (token[0].equals("write")) {
-      gRayTracer.init();
-      gRayTracer.render();
+      if( gEnv.mNumPrimitives > 0 ) {
+        gRayTracer.init();
+        gRayTracer.render();
+      }
       save(token[1]);  
     }
   } // End for
   
   // Debug
-  print("**** Print Info for current file: " + gCurrentFile + " **** \n");
-  print(" ENVIRONMENT INFO: \n");
-  gEnv.printInfo();
-  print("RAY TRACER INFO: \n");
-  gRayTracer.printInfo();
+  //print("**** Print Info for current file: " + gCurrentFile + " **** \n");
+  //print(" ENVIRONMENT INFO: \n");
+  //gEnv.printInfo();
+  //print("RAY TRACER INFO: \n");
+  //gRayTracer.printInfo();
 }
 
 //  Draw frames.  Should be left empty.
 void draw() {
 }
 
+// when mouse is pressed, print the cursor location
+void mousePressed() {
+  println ("mouse: " + mouseX + " " + mouseY);
+}
 
- 
-
+/**< Reset interpreter variables when a new main file (not included) is loaded */ 
+void initInterpreter() { 
+  
+  // Set matrix to store current position - Start with identity
+  mStack = new naiveStack();
+  mMat = new PMatrix3D();
+  mMat.reset();
+  
+  // Initialize values
+  readingPolygon = false;
+  polygonIndex = 0;
+  cdr = 1.0; cdg = 0.0; cdb = 0.0;
+  car = 0.1; cag = 0.9; cab = 0.0;
+  
+  // Reset environment
+  gEnv.resetEnvironment();
+  
+  // Set ray tracer with global vars
+  gRayTracer.setPixelDims( screen_width, screen_height );
+}

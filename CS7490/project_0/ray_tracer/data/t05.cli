@@ -1,4 +1,4 @@
-# colored lights
+# icosahedron
 
 fov 60
 
@@ -8,7 +8,7 @@ background 0.2 0.2 1
 
 # one light
 
-light 4 4 8  .7 .7 .7
+point_light 4 4 8  .7 .7 .7
 
 # icosahedron
 
@@ -134,4 +134,4 @@ vertex -0.525731 -0.850651 -3
 vertex -0.850651 0 -2.474269
 end
 
-write c1.png
+write t05.png

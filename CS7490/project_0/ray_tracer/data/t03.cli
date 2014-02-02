@@ -1,7 +1,7 @@
 # one white triangle
 
 fov 60
-light 0 0 0 1 1 1
+point_light 0 0 0 1 1 1
 background 0.3 0.3 0.7
 
 diffuse   0.8 0.8 0.8   0 0 0
@@ -12,4 +12,4 @@ vertex  -1 1 -2
 vertex   1 1 -2
 end
 
-write c0.png
+write t03.png
