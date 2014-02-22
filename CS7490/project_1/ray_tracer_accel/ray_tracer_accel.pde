@@ -10,10 +10,11 @@ int screen_height = 300;
 int sTriangleType = 0;
 int sSphereType = 1;
 int sInstanceType = 2;
+int sBoxType = 3;
 
 Environment gEnv = new Environment();
 RayTracer gRayTracer = new RayTracer();
- 
+int timer;
  
  // Interpreter variables ------------------
    boolean readingPolygon;
@@ -118,7 +119,20 @@ void interpreter(String filename) {
       xmax = Float.parseFloat( token[4] );
       ymax = Float.parseFloat( token[5] );
       zmax = Float.parseFloat( token[6] );      
-      print("Bounding box! \n");
+      
+      // Apply matrix in stack
+      //float[] pm = new float[3];
+      //float[] p = new float[3];
+      //p[0] = x; p[1] = y; p[2] = z;
+      //mMat.mult( p, pm  );
+      
+      Box box = new Box();
+      box.set( xmin, ymin, zmin, xmax, ymax, zmax );
+      box.setDiffuseCoeff( cdr, cdg, cdb );
+      box.setAmbienceCoeff( car, cag, cab );
+      
+      gEnv.addPrimitive( box );
+
     }
     
     /**< Begin list */
@@ -152,10 +166,14 @@ void interpreter(String filename) {
     
     /**< Reset timer */
     else if( token[0].equals("reset_timer") ) {
-      
+      timer = millis();      
     }
     
     else if( token[0].equals("print_timer") ){
+      int new_timer = millis();
+      int diff = new_timer - timer;
+      float seconds = diff / 1000.0;
+      println ("timer = " + seconds);
     }
 
 
@@ -301,8 +319,6 @@ void interpreter(String filename) {
     }
   } // End for
   
-  // Print environment info
-  gEnv.printInfo();
   
 }
 

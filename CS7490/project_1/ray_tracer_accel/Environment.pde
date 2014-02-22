@@ -94,6 +94,11 @@ String[] gNamedPrimitiveNames = new String[gMaxNumNamedPrimitives];
         mPrimitives[mNumPrimitives] = new Instance();
         ((Instance)mPrimitives[mNumPrimitives]).copyData( (Instance)_primitive );        
       } 
+      else if( _primitive.getType() == sBoxType ) {
+        mPrimitives[mNumPrimitives] = new Box();
+        ((Box)mPrimitives[mNumPrimitives]).copyData( (Box)_primitive );        
+      } 
+
 
       mNumPrimitives++;
     }                

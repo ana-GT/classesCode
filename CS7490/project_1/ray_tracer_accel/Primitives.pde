@@ -65,18 +65,19 @@ class Instance extends Primitive {
 
   /**< hit function */
   boolean hit( ray _R, hitRecord _rec ) {
-   PVector res = new PVector(), res2 = new PVector();
+   PVector res = new PVector();
    PVector p1 = new PVector( _R.P.x, _R.P.y, _R.P.z );
-   PVector p2 = new PVector(_R.T.x, _R.T.y, _R.T.z );
+   float[] p2 = new float[4]; p2[0] = _R.T.x; p2[1] =  _R.T.y; p2[2] =  _R.T.z; p2[3] = 0;
+   float[] res2 = new float[4];
    mTow.mult( p1, res ); 
    mTow.mult( p2, res2 );
    
-   pt P2 = new pt( res.x, res.y, res.z ); vec V2 = new vec(res2.x, res2.y, res2.z);
+   pt P2 = new pt( res.x, res.y, res.z ); vec V2 = new vec(res2[0], res2[1], res2[2]);
    ray R = new ray(); R.set( P2, V2 );
    boolean b = gNamedPrimitives[mPInd].hit( R, _rec );
     
     if( b == true ) {
-      print("Intersect \n");
+    //print("Intersect \n");
     PMatrix3D mt = mTow.get(); mt.transpose();
     
     PVector res3 = new PVector();
@@ -113,6 +114,113 @@ class Instance extends Primitive {
     mTow.print();
     print("Global primitive index: " + mPInd + "\n");
   }
+  
+};
+
+/****************************
+ * @class Box
+ ****************************/
+class Box extends Primitive {
+  
+  public pt Pmin = new pt();
+  public pt Pmax = new pt();
+  
+  /**< @function Constructor */
+  Box() {
+    super( sBoxType );
+
+    Pmin.x = 0; Pmin.y = 0; Pmin.z = 0;
+    Pmax.x = 0; Pmax.y = 0; Pmax.z = 0;    
+  }
+
+  /**< setBounds */
+   void setBounds( pt min, pt max ) {
+     Pmin.x = min.x; Pmin.y = min.y; Pmin.z = min.z;
+     Pmax.x = max.x; Pmax.y = max.y; Pmax.z = max.z;     
+   }
+   
+   void set( float xmin, float ymin, float zmin, float xmax, float ymax, float zmax ) {
+     Pmin.x = xmin; Pmin.y = ymin; Pmin.z = zmin;
+     Pmax.x = xmax; Pmax.y = ymax; Pmax.z = zmax;     
+   }
+
+  /** @function copyData */
+  void copyData( Box _box ) {
+
+    Pmin.x = _box.Pmin.x; Pmin.y = _box.Pmin.y; Pmin.z = _box.Pmin.z;
+    Pmax.x = _box.Pmax.x; Pmax.y = _box.Pmax.y; Pmax.z = _box.Pmax.z;
+    
+    setDiffuseCoeff( _box.mDiff[0], _box.mDiff[1], _box.mDiff[2] );
+    setAmbienceCoeff( _box.mAmb[0], _box.mAmb[1], _box.mAmb[2] );
+  }
+  
+  /** @function hit */
+  // Adapted from http://geomalgorithms.com/a06-_intersect-2.html
+  boolean hit( ray _R, hitRecord _rec ) {
+    float t1, t2, tnear, tfar;
+    tnear = -1000; tfar = 1000;
+    vec nx = new vec(); vec ny = new vec(); vec nz = new vec(); vec n = new vec();
+    float ttemp;
+
+    // Plane X    
+    if( _R.T.x == 0 ) {
+      if( _R.P.x < Pmin.x || _R.P.x > Pmax.x ) { return false; }
+    }
+    
+    t1 = (Pmin.x - _R.P.x) / _R.T.x; 
+    t2 = (Pmax.x - _R.P.x) / _R.T.x;      
+
+    nx.x = -1; nx.y = 0; nx.z = 0;
+    
+    if( t1 > t2 ) { ttemp = t2; t2 = t1; t1 = ttemp; nx.x = +1; nx.y = 0; nx.z = 0; }
+    if( t1 > tnear ) { tnear = t1; n = nx; }
+    if( t2 < tfar ) { tfar = t2; }
+    if( tnear > tfar ) { return false; }
+    if( tfar < 0 ) { return false; }
+
+    // Plane Y
+    if( _R.T.y == 0 ) {
+      if( _R.P.y < Pmin.y || _R.P.y > Pmax.y ) { return false; }
+    }
+    
+    t1 = (Pmin.y - _R.P.y) / _R.T.y;
+    t2 = (Pmax.y - _R.P.y) / _R.T.y;      
+
+    ny.x = 0; ny.y = -1; ny.z = 0;
+    
+    if( t1 > t2 ) { ttemp = t2; t2 = t1; t1 = ttemp; ny.x = 0; ny.y = +1; ny.z = 0; }
+    if( t1 > tnear ) { tnear = t1; n = ny; }
+    if( t2 < tfar ) { tfar = t2; }
+    if( tnear > tfar ) { return false; }
+    if( tfar < 0 ) { return false; }
+
+    // Plane Z
+    if( _R.T.z == 0 ) {
+      if( _R.P.z < Pmin.z || _R.P.z > Pmax.z ) { return false; }
+    }
+    
+    t1 = (Pmin.z - _R.P.z) / _R.T.z;
+    t2 = (Pmax.z - _R.P.z) / _R.T.z;      
+
+    nz.x = 0; nz.y = 0; nz.z = -1;
+    
+    if( t1 > t2 ) { ttemp = t2; t2 = t1; t1 = ttemp; nz.x = 0; nz.y = 0; nz.z = +1; }
+    if( t1 > tnear ) { tnear = t1; n = nz; }
+    if( t2 < tfar ) { tfar = t2; }
+    if( tnear > tfar ) { return false; }
+    if( tfar < 0 ) { return false; }
+
+    // Store hit record
+    _rec.dist = tnear;
+    _rec.point = P(_R.P, tnear, _R.T );
+    _rec.normal = n;
+
+
+    return true;
+    
+    
+  }
+
   
 };
 
@@ -242,7 +350,8 @@ class Sphere extends Primitive {
   
   /** copyData */
   void copyData( Sphere _sphere ) {
-    mC = _sphere.mC;
+    mC.x = _sphere.mC.x; mC.y = _sphere.mC.y; mC.z = _sphere.mC.z;
+    print("Center: " + mC.x + " " + mC.y + " " + mC.z + "\n");
     mR = _sphere.mR;
     setDiffuseCoeff( _sphere.mDiff[0], _sphere.mDiff[1], _sphere.mDiff[2] );
     setAmbienceCoeff( _sphere.mAmb[0], _sphere.mAmb[1], _sphere.mAmb[2] );
@@ -251,7 +360,7 @@ class Sphere extends Primitive {
   
     /** @function hit */
   boolean hit( ray _R, hitRecord _rec ) {    
-        
+     //print( "Test ray "+_R.P.x + " " + _R.P.y + " " + _R.P.z + " T: " + _R.T.x +  " " + _R.T.y + " " + _R.T.z + "\n");
     float A = d( _R.T, _R.T );
     vec ec = V( this.mC, _R.P );
     float B = 2.0*d( _R.T, ec );
@@ -259,9 +368,10 @@ class Sphere extends Primitive {
     float C = d( ec, ec ) - r*r;
        
     float D = sq(B) - 4*A*C;
-    float sqD = abs( sqrt(D));
+
     if( D < 0 ) { return false; } // No intersect
     else {
+          float sqD = abs( sqrt(D));
          float t1, t2, dist;
          t1 = (-B + sqD) / (2.0*A);
          t2 = (-B - sqD) / (2.0*A);
