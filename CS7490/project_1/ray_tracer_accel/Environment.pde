@@ -70,6 +70,11 @@ String[] gNamedPrimitiveNames = new String[gMaxNumNamedPrimitives];
         mPrimitives[i].printInfo();
       }      
       
+            for( int i = 0; i < gNumNamedPrimitives; ++i ) {
+        print("** Named Primitive ["+i+"]: \n");
+        gNamedPrimitives[i].printInfo();
+      } 
+      
     }   
        
     /**

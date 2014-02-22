@@ -55,7 +55,7 @@ class Instance extends Primitive {
   Instance( int _ind, PMatrix3D _Two ) {
     super( sInstanceType );
     mPInd = _ind; 
-    mTwo = _Two;
+    mTwo = _Two.get();
     mTow = mTwo.get(); mTow.invert();
 
     setDiffuseCoeff( gNamedPrimitives[mPInd].mDiff[0], gNamedPrimitives[mPInd].mDiff[1], gNamedPrimitives[mPInd].mDiff[2] );
@@ -63,7 +63,7 @@ class Instance extends Primitive {
     
   }
 
-
+  /**< hit function */
   boolean hit( ray _R, hitRecord _rec ) {
    PVector res = new PVector(), res2 = new PVector();
    PVector p1 = new PVector( _R.P.x, _R.P.y, _R.P.z );
@@ -72,18 +72,24 @@ class Instance extends Primitive {
    mTow.mult( p2, res2 );
    
    pt P2 = new pt( res.x, res.y, res.z ); vec V2 = new vec(res2.x, res2.y, res2.z);
-    ray R = new ray(); R.set( P2, V2 );
-    boolean b = gNamedPrimitives[mPInd].hit( R, _rec );
+   ray R = new ray(); R.set( P2, V2 );
+   boolean b = gNamedPrimitives[mPInd].hit( R, _rec );
     
     if( b == true ) {
+      print("Intersect \n");
     PMatrix3D mt = mTow.get(); mt.transpose();
     
     PVector res3 = new PVector();
-    PVector p3 = new PVector(_rec.point.x, _rec.point.y, _rec.point.z );
-    mTwo.mult( p3, res3 );
-    _rec.point = new pt( res3.x, res3.y, res3.z );
-    //_rec.normal = mTow.transpose()*_rec.normal;
+    PVector p3 = new PVector( _R.P.x + _R.T.x*_rec.dist, _R.P.x + _R.T.y*_rec.dist, _R.P.x + _R.T.z*_rec.dist );
+
+    _rec.point = new pt( p3.x, p3.y, p3.z );
+    
+    PVector n4 = new PVector( _rec.normal.x, _rec.normal.y, _rec.normal.z );
+    PVector res4 = new PVector();
+    mt.mult(n4, res4);
+    _rec.normal.x = res4.x; _rec.normal.y = res4.y; _rec.normal.z = res4.z; 
     }
+    
     return b;
   }
 
@@ -91,8 +97,21 @@ class Instance extends Primitive {
   void copyData( Instance _instance ) {
     mPInd = _instance.mPInd;
     mTwo = _instance.mTwo;
+    mTow = _instance.mTow;
     setDiffuseCoeff( _instance.mDiff[0], _instance.mDiff[1], _instance.mDiff[2] );
     setAmbienceCoeff( _instance.mAmb[0], _instance.mAmb[1], _instance.mAmb[2] );
+  }
+
+  /**
+   * @function printInfo
+   */
+  void printInfo() {
+    print("Primitive Instance \n");
+    print("Two: \n");
+    mTwo.print();
+    print("Tow: \n");
+    mTow.print();
+    print("Global primitive index: " + mPInd + "\n");
   }
   
 };

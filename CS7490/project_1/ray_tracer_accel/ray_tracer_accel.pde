@@ -140,6 +140,8 @@ void interpreter(String filename) {
     /**< Instance */    
     else if( token[0].equals("instance") ) {
       int ind = gEnv.getInstanceInd( token[1] );
+      print("Print mMat while instancing this crap: \n");
+      mMat.print();
       Instance inst = new Instance( ind, mMat );
       gEnv.addPrimitive( inst );
     }
@@ -298,6 +300,9 @@ void interpreter(String filename) {
       save(token[1]);  
     }
   } // End for
+  
+  // Print environment info
+  gEnv.printInfo();
   
 }
 
