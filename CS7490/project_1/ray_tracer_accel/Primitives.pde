@@ -6,8 +6,11 @@ class Primitive {
   
   public float[] mDiff = new float[3];
   public float[] mAmb = new float[3];
+  
+  float[] bmin = new float[3];
+  float[] bmax = new float[3];  
 
-  Primitive() { mType = sSphereType; }
+  Primitive() { mType = sDefaultType; }
   Primitive( int _type ) { mType = _type; }
 
   /**Return type */
@@ -15,7 +18,10 @@ class Primitive {
   
   void copyData( Primitive _p ) {};
   
-  boolean hit( ray _R, hitRecord _rec ) { print("I SHOULD NOT BE CALLED \n");return false; }
+  boolean hit( ray _R, hitRecord _rec ) { 
+    print("I SHOULD NOT BE CALLED \n");
+    return false; 
+  }
 
   /** Set diffuse coefficient */
   void setDiffuseCoeff( float _cdr, float _cdg, float _cdb ) {
@@ -30,6 +36,17 @@ class Primitive {
     mAmb[1] = _cag;
     mAmb[2] = _cab;
   }
+  
+  /**< Get bounding box */
+  float[] getBB() {
+    float[] bb = new float[6];
+    bb[0] = bmin[0]; bb[1] = bmin[1]; bb[2] = bmin[2];
+    bb[3] = bmax[0]; bb[4] = bmax[1]; bb[5] = bmax[2];   
+    return bb; 
+  }
+  
+  /**< Calculate bounding box */
+  boolean calculateBB() { return true; };
   
   /** printInfo() */
   void printInfo() { println("Primitive info default - YOU MUST INSTANCE THIS!"); }
@@ -52,6 +69,7 @@ class Instance extends Primitive {
     mTow = new PMatrix3D();
   }
 
+  /**< Constructor 2*/
   Instance( int _ind, PMatrix3D _Two ) {
     super( sInstanceType );
     mPInd = _ind; 
@@ -77,7 +95,6 @@ class Instance extends Primitive {
    boolean b = gNamedPrimitives[mPInd].hit( R, _rec );
     
     if( b == true ) {
-    //print("Intersect \n");
     PMatrix3D mt = mTow.get(); mt.transpose();
     
     PVector res3 = new PVector();
@@ -114,6 +131,130 @@ class Instance extends Primitive {
     mTow.print();
     print("Global primitive index: " + mPInd + "\n");
   }
+  
+};
+
+/****************************
+ * @class List
+ ****************************/
+class List extends Primitive {
+
+  public int MAX_NUM_PRIMITIVES = 1600;   
+  public int mSize;
+  public Primitive[] mObjects = new Primitive[MAX_NUM_PRIMITIVES];
+  public Box BB = new Box();
+  
+  
+  List() {
+    super( sListType );
+    mSize = 0;
+    
+    for( int i = 0; i < MAX_NUM_PRIMITIVES; ++i ) {
+        mObjects[i] = new Primitive();
+    }
+  }
+  
+  /** @function copyData */
+  void copyData( List _list ) {
+    mSize = 0;
+
+    for( int i = 0; i < _list.mSize; ++i ) {
+      if( _list.mObjects[i].getType() == sTriangleType ) { 
+        addObject( (Triangle)_list.mObjects[i] ); 
+      }      
+    }
+    
+
+    setDiffuseCoeff( _list.mDiff[0], _list.mDiff[1], _list.mDiff[2] );
+    setAmbienceCoeff( _list.mAmb[0], _list.mAmb[1], _list.mAmb[2] );
+  }
+  
+  /**< addObject */
+  void addObject( Primitive _p ) {
+
+      if( _p.getType() == sSphereType ) {
+        mObjects[mSize] = new Sphere();
+        ((Sphere)mObjects[mSize]).copyData( (Sphere)_p );        
+      } 
+      else if( _p.getType() == sTriangleType ) {
+        mObjects[mSize] = new Triangle();
+        ((Triangle)mObjects[mSize]).copyData( (Triangle)_p );        
+      } 
+      else if( _p.getType() == sInstanceType ) {
+        mObjects[mSize] = new Instance();
+        ((Instance)mObjects[mSize]).copyData( (Instance)_p );        
+      } 
+      else if( _p.getType() == sBoxType ) {
+        mObjects[mSize] = new Box();
+        ((Box)mObjects[mSize]).copyData( (Box)_p );        
+      } 
+      else if( _p.getType() == sListType ) {
+        mObjects[mSize] = new List();
+        ((List)mObjects[mSize]).copyData( (List)_p );           
+      }    
+    mSize++;
+  }
+  
+  /**< getSize */
+  int getSize() { return mSize; }
+
+  /**< setBoundingBox */
+  void setBoundingBox() {
+    
+    bmin[0] = 1000; bmin[1] = 1000; bmin[2] = 1000;
+    bmax[0] = -1000; bmax[1] = -1000; bmax[2] = -1000;    
+    
+    float[] bb = new float[6];
+    
+    // Go through all bounding boxes of the objects and get the bounding box for this guy
+    for( int i = 0; i < mSize; ++i ) {
+       mObjects[i].calculateBB();
+       bb = mObjects[i].getBB();
+       if( bmin[0] < bb[0] ) { bmin[0] = bb[0]; } if( bmax[0] > bb[3] ) { bmax[0] = bb[3]; }
+       if( bmin[1] < bb[1] ) { bmin[1] = bb[1]; } if( bmax[1] > bb[4] ) { bmax[1] = bb[4]; }
+       if( bmin[2] < bb[2] ) { bmin[2] = bb[2]; } if( bmax[2] > bb[5] ) { bmax[2] = bb[5]; }
+
+    }
+    
+    BB.set( bmin[0], bmin[1], bmin[2], bmax[0], bmax[1], bmax[2] ); 
+    
+  }
+
+
+    /**< hit function */
+  boolean hit( ray _R, hitRecord _rec ) {
+
+    hitRecord hr = new hitRecord();
+    
+    if( !BB.hit( _R, hr ) ) { return false; }
+    else {
+
+      double minDist = 1000;
+      int minInd = -1;
+      boolean got = false;
+
+      for( int i = 0; i < mSize; ++i ) {
+      
+        if( ((Triangle)mObjects[i]).hit( _R, hr ) == true ) {
+            got = true;
+            if( hr.dist < minDist ) {
+                minDist = hr.dist;
+                minInd = i;
+                _rec.copyData(hr);
+            } 
+        }
+        
+      }
+      
+      if( got ) {
+          mDiff = mObjects[minInd].mDiff;
+          mAmb = mObjects[minInd].mAmb;
+      }
+      return got;
+    }  
+
+  }
+  
   
 };
 
@@ -155,7 +296,6 @@ class Box extends Primitive {
   }
   
   /** @function hit */
-  // Adapted from http://geomalgorithms.com/a06-_intersect-2.html
   boolean hit( ray _R, hitRecord _rec ) {
     float t1, t2, tnear, tfar;
     tnear = -1000; tfar = 1000;
@@ -257,6 +397,32 @@ class Triangle extends Primitive {
     }
     setDiffuseCoeff( _triangle.mDiff[0], _triangle.mDiff[1], _triangle.mDiff[2] );
     setAmbienceCoeff( _triangle.mAmb[0], _triangle.mAmb[1], _triangle.mAmb[2] );
+    
+  }
+  
+  /** ........................*/  
+  /**< Calculate bounding box */
+  /** ........................*/    
+  boolean calculateBB() { 
+  
+    bmin[0] = 1000; bmin[1] = 1000; bmin[2] = 1000;
+    bmax[0] = -1000; bmax[1] = -1000; bmax[2] = -1000;
+    
+    if( mV[0].x < bmin[0] ) { bmin[0] = mV[0].x; }  if( mV[0].x > bmax[0] ) { bmax[0] = mV[0].x; }
+    if( mV[1].x < bmin[0] ) { bmin[0] = mV[1].x; }  if( mV[1].x > bmax[0] ) { bmax[0] = mV[1].x; } 
+    if( mV[2].x < bmin[0] ) { bmin[0] = mV[2].x; }  if( mV[2].x > bmax[0] ) { bmax[0] = mV[2].x; } 
+
+    if( mV[0].y < bmin[1] ) { bmin[0] = mV[0].y; }  if( mV[0].y > bmax[1] ) { bmax[1] = mV[0].y; }
+    if( mV[1].y < bmin[1] ) { bmin[0] = mV[1].y; }  if( mV[1].y > bmax[1] ) { bmax[1] = mV[1].y; } 
+    if( mV[2].y < bmin[1] ) { bmin[0] = mV[2].y; }  if( mV[2].y > bmax[1] ) { bmax[1] = mV[2].y; } 
+
+    if( mV[0].z < bmin[2] ) { bmin[2] = mV[0].z; }  if( mV[0].z > bmax[2] ) { bmax[2] = mV[0].z; }
+    if( mV[1].z < bmin[2] ) { bmin[2] = mV[1].z; }  if( mV[1].z > bmax[2] ) { bmax[2] = mV[1].z; } 
+    if( mV[2].z < bmin[2] ) { bmin[2] = mV[2].z; }  if( mV[2].z > bmax[2] ) { bmax[2] = mV[2].z; } 
+
+
+    
+    return true; 
   }
   
   /** @function hit */
@@ -360,7 +526,6 @@ class Sphere extends Primitive {
   
     /** @function hit */
   boolean hit( ray _R, hitRecord _rec ) {    
-     //print( "Test ray "+_R.P.x + " " + _R.P.y + " " + _R.P.z + " T: " + _R.T.x +  " " + _R.T.y + " " + _R.T.z + "\n");
     float A = d( _R.T, _R.T );
     vec ec = V( this.mC, _R.P );
     float B = 2.0*d( _R.T, ec );
@@ -412,6 +577,13 @@ class hitRecord {
   public float dist;
   public pt point;
   public vec normal;  
+  
+  /**< copyData */
+  void copyData( hitRecord _hr ) {
+    dist = _hr.dist;
+    point = new pt( _hr.point.x, _hr.point.y, _hr.point.z );
+    normal = new vec( _hr.normal.x, _hr.normal.y, _hr.normal.z );     
+  }
 }
 
 /******************************

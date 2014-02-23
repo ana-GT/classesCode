@@ -11,7 +11,7 @@ String[] gNamedPrimitiveNames = new String[gMaxNumNamedPrimitives];
   class Environment {
     
     public int sMaxNumLights = 10;
-    public int sMaxNumPrimitives = 255;
+    public int sMaxNumPrimitives = 80000;
     public int mNumLights;
     public int mNumPrimitives;
     
@@ -98,6 +98,11 @@ String[] gNamedPrimitiveNames = new String[gMaxNumNamedPrimitives];
         mPrimitives[mNumPrimitives] = new Box();
         ((Box)mPrimitives[mNumPrimitives]).copyData( (Box)_primitive );        
       } 
+      else if( _primitive.getType() == sListType ) {
+        mPrimitives[mNumPrimitives] = new List();
+        ((List)mPrimitives[mNumPrimitives]).copyData( (List)_primitive );  
+        ((List)mPrimitives[mNumPrimitives]).setBoundingBox(); 
+      }
 
 
       mNumPrimitives++;

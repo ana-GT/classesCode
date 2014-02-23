@@ -7,10 +7,12 @@
 int screen_width = 300;
 int screen_height = 300;
 
-int sTriangleType = 0;
-int sSphereType = 1;
-int sInstanceType = 2;
-int sBoxType = 3;
+int sDefaultType = 0;
+int sTriangleType = 1;
+int sSphereType = 2;
+int sInstanceType = 3;
+int sBoxType = 4;
+int sListType = 5;
 
 Environment gEnv = new Environment();
 RayTracer gRayTracer = new RayTracer();
@@ -19,10 +21,13 @@ int timer;
  // Interpreter variables ------------------
    boolean readingPolygon;
   Triangle triangle = new Triangle();
+  List list = new List();
   int polygonIndex;
   float  cdr, cdg, cdb, car, cag, cab;
   naiveStack mStack;
   PMatrix3D mMat;
+  objectStack mObjStack;
+  boolean readingList;
   // -----------------------------------------
 
 
@@ -120,12 +125,6 @@ void interpreter(String filename) {
       ymax = Float.parseFloat( token[5] );
       zmax = Float.parseFloat( token[6] );      
       
-      // Apply matrix in stack
-      //float[] pm = new float[3];
-      //float[] p = new float[3];
-      //p[0] = x; p[1] = y; p[2] = z;
-      //mMat.mult( p, pm  );
-      
       Box box = new Box();
       box.set( xmin, ymin, zmin, xmax, ymax, zmax );
       box.setDiffuseCoeff( cdr, cdg, cdb );
@@ -137,12 +136,23 @@ void interpreter(String filename) {
     
     /**< Begin list */
     else if( token[0].equals("begin_list") ) {
-      
+      readingList = true;  
+      list = new List();
     } 
     
     /**< End list */
     else if( token[0].equals("end_list") ) {
-    
+      readingList = false;
+      
+      // Fill the list with the objects in the stack
+      int n = mObjStack.getSize();
+      for( int j = 0; j < n; ++j ) {
+        list.addObject( mObjStack.pop() );
+      }
+      
+      // Save the list
+      gEnv.addPrimitive( list );
+      
     }
     
     /**< Named object */
@@ -154,7 +164,6 @@ void interpreter(String filename) {
     /**< Instance */    
     else if( token[0].equals("instance") ) {
       int ind = gEnv.getInstanceInd( token[1] );
-      print("Print mMat while instancing this crap: \n");
       mMat.print();
       Instance inst = new Instance( ind, mMat );
       gEnv.addPrimitive( inst );
@@ -200,7 +209,9 @@ void interpreter(String filename) {
     else if (token[0].equals("end")) {
       triangle.setDiffuseCoeff( cdr, cdg, cdb );
       triangle.setAmbienceCoeff( car, cag, cab );
-      gEnv.addPrimitive( triangle );
+
+      if( !readingList ) { gEnv.addPrimitive( triangle ); }
+      else { mObjStack.push( triangle ); }
       readingPolygon = false;
     }
     
@@ -336,11 +347,13 @@ void initInterpreter() {
   
   // Set matrix to store current position - Start with identity
   mStack = new naiveStack();
+  mObjStack = new objectStack();
   mMat = new PMatrix3D();
   mMat.reset();
   
   // Initialize values
   readingPolygon = false;
+  readingList = false;
   polygonIndex = 0;
   cdr = 1.0; cdg = 0.0; cdb = 0.0;
   car = 0.1; cag = 0.9; cab = 0.0;

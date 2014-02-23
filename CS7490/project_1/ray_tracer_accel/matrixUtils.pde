@@ -36,3 +36,54 @@ public class naiveStack {
     return mat;
   }
 };
+
+
+/**
+ * @class objectStack
+ * @brief Object stack for matrix transformations
+ */
+public class objectStack {
+  private int mSize = 0;
+  private static final int MAX_CAPACITY = 1600;
+  private Primitive mPrims[];
+  
+  /** Constructor */
+  public objectStack() {
+    mPrims = new Primitive[MAX_CAPACITY];
+    for( int i = 0; i < MAX_CAPACITY;++i ) {
+      mPrims[i] = new Primitive();
+    }
+  }
+  
+  public int getSize() { return mSize; }
+  
+  /**< Push */
+  public void push( Primitive _p ) {
+    if( mSize == mPrims.length ) {
+      print("[DANGER PushStack] Oh, no! you are exceeding my capacity. I will do evil things to your code! \n");
+      return;
+    }   
+    
+    if( _p.getType() == sTriangleType ) {
+         mPrims[mSize] = new Triangle();
+        ((Triangle)mPrims[mSize]).copyData( (Triangle)_p );  
+    } else {
+      print("objStack: PUSH: CHECK THE FUNCTION I AM NOT ADDING STUFF!!! \n");
+    }
+    mSize++;
+  }
+  
+  /**< Pop */
+  public Primitive pop() {
+    Primitive p = new Primitive(); 
+    if( mPrims[mSize - 1].getType() == sTriangleType ) {
+      p = new Triangle();
+      ((Triangle)p).copyData( (Triangle)mPrims[mSize - 1] );
+    } else {
+    }
+    
+    mSize--;
+      
+    return p;
+  }
+};
