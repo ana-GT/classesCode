@@ -4,7 +4,7 @@
   class Environment {
     
     public int sMaxNumLights = 10;
-    public int sMaxNumPrimitives = 255;
+    public int sMaxNumPrimitives = 1600;
     public int mNumLights;
     public int mNumPrimitives;
     

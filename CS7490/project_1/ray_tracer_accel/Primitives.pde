@@ -210,13 +210,14 @@ class List extends Primitive {
     for( int i = 0; i < mSize; ++i ) {
        mObjects[i].calculateBB();
        bb = mObjects[i].getBB();
-       if( bmin[0] < bb[0] ) { bmin[0] = bb[0]; } if( bmax[0] > bb[3] ) { bmax[0] = bb[3]; }
-       if( bmin[1] < bb[1] ) { bmin[1] = bb[1]; } if( bmax[1] > bb[4] ) { bmax[1] = bb[4]; }
-       if( bmin[2] < bb[2] ) { bmin[2] = bb[2]; } if( bmax[2] > bb[5] ) { bmax[2] = bb[5]; }
+       if( bmin[0] > bb[0] ) { bmin[0] = bb[0]; } if( bmax[0] < bb[3] ) { bmax[0] = bb[3]; }
+       if( bmin[1] > bb[1] ) { bmin[1] = bb[1]; } if( bmax[1] < bb[4] ) { bmax[1] = bb[4]; }
+       if( bmin[2] > bb[2] ) { bmin[2] = bb[2]; } if( bmax[2] < bb[5] ) { bmax[2] = bb[5]; }
 
     }
     
     BB.set( bmin[0], bmin[1], bmin[2], bmax[0], bmax[1], bmax[2] ); 
+    print("Bounding box of list: " + bmin[0] + " " +  bmin[1] + " " +  bmin[2] + " "  +  bmax[0] + " "  +  bmax[1] + " " + bmax[2] + "\n");
     
   }
 
@@ -412,9 +413,9 @@ class Triangle extends Primitive {
     if( mV[1].x < bmin[0] ) { bmin[0] = mV[1].x; }  if( mV[1].x > bmax[0] ) { bmax[0] = mV[1].x; } 
     if( mV[2].x < bmin[0] ) { bmin[0] = mV[2].x; }  if( mV[2].x > bmax[0] ) { bmax[0] = mV[2].x; } 
 
-    if( mV[0].y < bmin[1] ) { bmin[0] = mV[0].y; }  if( mV[0].y > bmax[1] ) { bmax[1] = mV[0].y; }
-    if( mV[1].y < bmin[1] ) { bmin[0] = mV[1].y; }  if( mV[1].y > bmax[1] ) { bmax[1] = mV[1].y; } 
-    if( mV[2].y < bmin[1] ) { bmin[0] = mV[2].y; }  if( mV[2].y > bmax[1] ) { bmax[1] = mV[2].y; } 
+    if( mV[0].y < bmin[1] ) { bmin[1] = mV[0].y; }  if( mV[0].y > bmax[1] ) { bmax[1] = mV[0].y; }
+    if( mV[1].y < bmin[1] ) { bmin[1] = mV[1].y; }  if( mV[1].y > bmax[1] ) { bmax[1] = mV[1].y; } 
+    if( mV[2].y < bmin[1] ) { bmin[1] = mV[2].y; }  if( mV[2].y > bmax[1] ) { bmax[1] = mV[2].y; } 
 
     if( mV[0].z < bmin[2] ) { bmin[2] = mV[0].z; }  if( mV[0].z > bmax[2] ) { bmax[2] = mV[0].z; }
     if( mV[1].z < bmin[2] ) { bmin[2] = mV[1].z; }  if( mV[1].z > bmax[2] ) { bmax[2] = mV[1].z; } 

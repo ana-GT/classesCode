@@ -43,7 +43,7 @@ void setup() {
 void keyPressed() {
   initInterpreter();
   switch(key) {
-    case '1':  interpreter("t01.cli"); break;
+    case '1':  interpreter("bunny.cli"); break;
     case '2':  interpreter("t02.cli"); break;
     case '3':  interpreter("t03.cli"); break;
     case '4':  interpreter("t04.cli"); break;
