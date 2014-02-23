@@ -59,7 +59,6 @@ void keyPressed() {
     case '7':  interpreter("data/t07.cli"); break;
     case '8':  interpreter("data/t08.cli"); break;
     case '9':  interpreter("data/t09.cli"); break;
-    case '0':  interpreter("data/t10.cli"); break;
     case 'q':  exit(); break;
   }
 }
