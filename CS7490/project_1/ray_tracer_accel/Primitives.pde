@@ -7,8 +7,7 @@ class Primitive {
   public float[] mDiff = new float[3];
   public float[] mAmb = new float[3];
   
-  float[] bmin = new float[3];
-  float[] bmax = new float[3];  
+  Box bb;
 
   Primitive() { mType = sDefaultType; }
   Primitive( int _type ) { mType = _type; }
@@ -19,7 +18,7 @@ class Primitive {
   void copyData( Primitive _p ) {};
   
   boolean hit( ray _R, hitRecord _rec ) { 
-    print("I SHOULD NOT BE CALLED \n");
+    //print("[hit] ONLY CALLED WHEN PRIMITIVE NOT INITIALIZED TO A TYPE!! \n");
     return false; 
   }
 
@@ -38,15 +37,17 @@ class Primitive {
   }
   
   /**< Get bounding box */
-  float[] getBB() {
-    float[] bb = new float[6];
-    bb[0] = bmin[0]; bb[1] = bmin[1]; bb[2] = bmin[2];
-    bb[3] = bmax[0]; bb[4] = bmax[1]; bb[5] = bmax[2];   
-    return bb; 
+  float[] getDim_BB() {
+    float[] b = new float[6];
+    b[0] = bb.Pmin[0]; b[1] = bb.Pmin[1]; b[2] = bb.Pmin[2];
+    b[3] = bb.Pmax[0]; b[4] = bb.Pmax[1]; b[5] = bb.Pmax[2];   
+    return b; 
   }
   
+  Box boundingBox() { return bb; }
+  
   /**< Calculate bounding box */
-  boolean calculateBB() { return true; };
+  boolean initBB() { return true; };
   
   /** printInfo() */
   void printInfo() { println("Primitive info default - YOU MUST INSTANCE THIS!"); }
@@ -142,11 +143,11 @@ class List extends Primitive {
   public int MAX_NUM_PRIMITIVES = 1600;   
   public int mSize;
   public Primitive[] mObjects = new Primitive[MAX_NUM_PRIMITIVES];
-  public Box BB = new Box();
   
   
   List() {
     super( sListType );
+    bb = new Box();
     mSize = 0;
     
     for( int i = 0; i < MAX_NUM_PRIMITIVES; ++i ) {
@@ -173,24 +174,19 @@ class List extends Primitive {
   void addObject( Primitive _p ) {
 
       if( _p.getType() == sSphereType ) {
-        mObjects[mSize] = new Sphere();
-        ((Sphere)mObjects[mSize]).copyData( (Sphere)_p );        
+        mObjects[mSize] = (Sphere)_p;        
       } 
       else if( _p.getType() == sTriangleType ) {
-        mObjects[mSize] = new Triangle();
-        ((Triangle)mObjects[mSize]).copyData( (Triangle)_p );        
+        mObjects[mSize] = (Triangle)_p;        
       } 
       else if( _p.getType() == sInstanceType ) {
-        mObjects[mSize] = new Instance();
-        ((Instance)mObjects[mSize]).copyData( (Instance)_p );        
+        mObjects[mSize] = (Instance)_p;        
       } 
       else if( _p.getType() == sBoxType ) {
-        mObjects[mSize] = new Box();
-        ((Box)mObjects[mSize]).copyData( (Box)_p );        
+        mObjects[mSize] = (Box)_p;        
       } 
       else if( _p.getType() == sListType ) {
-        mObjects[mSize] = new List();
-        ((List)mObjects[mSize]).copyData( (List)_p );           
+        mObjects[mSize] = (List)_p;           
       }    
     mSize++;
   }
@@ -199,26 +195,24 @@ class List extends Primitive {
   int getSize() { return mSize; }
 
   /**< setBoundingBox */
-  void setBoundingBox() {
+  boolean initBB() {
     
-    bmin[0] = 1000; bmin[1] = 1000; bmin[2] = 1000;
-    bmax[0] = -1000; bmax[1] = -1000; bmax[2] = -1000;    
-    
-    float[] bb = new float[6];
+    bb.Pmin[0] = 1000; bb.Pmin[1] = 1000; bb.Pmin[2] = 1000;
+    bb.Pmax[0] = -1000; bb.Pmax[1] = -1000; bb.Pmax[2] = -1000;
+        
+    float[] b = new float[6];
     
     // Go through all bounding boxes of the objects and get the bounding box for this guy
     for( int i = 0; i < mSize; ++i ) {
-       mObjects[i].calculateBB();
-       bb = mObjects[i].getBB();
-       if( bmin[0] > bb[0] ) { bmin[0] = bb[0]; } if( bmax[0] < bb[3] ) { bmax[0] = bb[3]; }
-       if( bmin[1] > bb[1] ) { bmin[1] = bb[1]; } if( bmax[1] < bb[4] ) { bmax[1] = bb[4]; }
-       if( bmin[2] > bb[2] ) { bmin[2] = bb[2]; } if( bmax[2] < bb[5] ) { bmax[2] = bb[5]; }
+       mObjects[i].initBB();
+       b = mObjects[i].getDim_BB();
+       if( bb.Pmin[0] > b[0] ) { bb.Pmin[0] = b[0]; } if( bb.Pmax[0] < b[3] ) { bb.Pmax[0] = b[3]; }
+       if( bb.Pmin[1] > b[1] ) { bb.Pmin[1] = b[1]; } if( bb.Pmax[1] < b[4] ) { bb.Pmax[1] = b[4]; }
+       if( bb.Pmin[2] > b[2] ) { bb.Pmin[2] = b[2]; } if( bb.Pmax[2] < b[5] ) { bb.Pmax[2] = b[5]; }
 
     }
     
-    BB.set( bmin[0], bmin[1], bmin[2], bmax[0], bmax[1], bmax[2] ); 
-    print("Bounding box of list: " + bmin[0] + " " +  bmin[1] + " " +  bmin[2] + " "  +  bmax[0] + " "  +  bmax[1] + " " + bmax[2] + "\n");
-    
+    return true;
   }
 
 
@@ -227,7 +221,7 @@ class List extends Primitive {
 
     hitRecord hr = new hitRecord();
     
-    if( !BB.hit( _R, hr ) ) { return false; }
+    if( !bb.hit( _R, hr ) ) { return false; }
     else {
 
       double minDist = 1000;
@@ -259,38 +253,220 @@ class List extends Primitive {
   
 };
 
+
+/**********************
+ * @class BVH
+ ***********************/
+class BVH extends Primitive {
+  
+  public int mAxis;
+  
+  public Primitive left;
+  public Primitive right;
+  
+  /**< Constructor */
+  
+  /**< Constructor with objects in tow */
+  BVH( Primitive[] _objs, int _axis ) {
+    super( sBVHType );
+    bb = new Box();
+    mAxis = _axis;
+    left = new Primitive();
+    right = new Primitive();
+    initBB( _objs );
+
+  // HACK BECAUSE I KNOW ALL OF THEM ARE TRIANGLES!
+    // If only one member, set left node
+    if( _objs.length == 1 ) {
+       left = (Triangle)_objs[0];
+        mAmb = left.mAmb;
+        mDiff = left.mDiff;
+       
+     } else if( _objs.length == 2 ) {
+       left = (Triangle)_objs[0];
+       right = (Triangle)_objs[1];
+     } else {       
+
+       Triangle[][] parts= partition( _objs ); 
+       if( parts[0].length > 0 ) {
+         left = new BVH( parts[0], (mAxis + 1) % 3 );
+       }
+       if( parts[1].length > 0 ) { 
+         right = new BVH( parts[1], (mAxis + 1) %3 );       
+       }
+
+     }
+
+    
+  }
+  
+  /**< copyData: NO IMPLEMENTED!!!!!! */
+  void copyData( BVH _bvh ) { print("COPY DATA BVH NO IMPLEMENTED ARGH!!!! \n");}
+  
+  /**< init : Initialize BVH in tree-like organization */
+  boolean initBB( Primitive[] _objs ) {
+
+    bb.Pmin[0] = 1000; bb.Pmin[1] = 1000; bb.Pmin[2] = 1000;
+    bb.Pmax[0] = -1000; bb.Pmax[1] = -1000; bb.Pmax[2] = -1000;
+        
+    float[] b = new float[6];
+    
+    // Go through all bounding boxes of the objects and get the bounding box for this guy
+    for( int i = 0; i < _objs.length; ++i ) {
+       b = _objs[i].getDim_BB();
+       if( bb.Pmin[0] > b[0] ) { bb.Pmin[0] = b[0]; } if( bb.Pmax[0] < b[3] ) { bb.Pmax[0] = b[3]; }
+       if( bb.Pmin[1] > b[1] ) { bb.Pmin[1] = b[1]; } if( bb.Pmax[1] < b[4] ) { bb.Pmax[1] = b[4]; }
+       if( bb.Pmin[2] > b[2] ) { bb.Pmin[2] = b[2]; } if( bb.Pmax[2] < b[5] ) { bb.Pmax[2] = b[5]; }
+
+    }
+    
+    return true;
+
+  }
+  
+  /**< Partition list of objects in left and right around the middle of the axis */
+  Triangle[][] partition( Primitive[] _objs ) {
+    Triangle[][] parts = new Triangle[2][];
+    // Find m: Middle point in axis mAxis:
+    float m;
+    int n = _objs.length;
+    m = ( bb.Pmin[mAxis] + bb.Pmax[mAxis] ) / 2.0; 
+        
+    // Partition
+    Triangle[] tleft = new Triangle[n];
+    Triangle[] tright = new Triangle[n];    
+    int counter_left = 0;
+    int counter_right = 0;
+    
+    // HACK BECAUSE I KNOW ALL OBJECTS ARE TRIANGLE ARGH!!! FIX THE TRIANGLE SETTING
+    float p;
+    for( int i = 0; i < n; ++i ) {
+      p = ( _objs[i].bb.Pmax[mAxis] + _objs[i].bb.Pmin[mAxis] ) / 2.0;
+      if( p < m ) { 
+        tleft[counter_left] = (Triangle)_objs[i];
+        counter_left++; 
+      } else {
+        tright[counter_right] = (Triangle)_objs[i]; 
+        counter_right++;
+      }    
+    }
+    
+    // Now put the elements into pleft and pright
+    Triangle[] pleft = new Triangle[counter_left];
+    Triangle[] pright = new Triangle[counter_right];    
+    for( int i = 0; i < counter_left; ++i ) {
+      pleft[i] = (Triangle) tleft[i];
+    }
+
+    for( int i = 0; i < counter_right; ++i ) {
+      pright[i] = (Triangle) tright[i];
+    }
+   
+   parts[0] = pleft;
+   parts[1] = pright; 
+  
+    return parts;
+  }
+
+  
+  /**< hit */
+  boolean hit( ray _R, hitRecord _rec ) { 
+    
+    if( bb.hit( _R, _rec ) ) {
+      hitRecord lrec = new hitRecord();
+      hitRecord rrec = new hitRecord();
+      boolean left_hit, right_hit;
+      
+      left_hit = left.hit( _R, lrec );
+      right_hit = right.hit( _R, rrec );
+      if( left_hit && right_hit ) {
+        if( lrec.dist < rrec.dist ) {
+          _rec.copyData(lrec);
+        } else {
+          _rec.copyData(rrec);
+        }        
+        mAmb[0] = _rec.amb[0]; mAmb[1] = _rec.amb[1]; mAmb[2] = _rec.amb[2];
+        mDiff[0] = _rec.diff[0]; mDiff[1] = _rec.diff[1]; mDiff[2] = _rec.diff[2];
+        return true;
+      } else if( left_hit ) {
+        _rec.copyData(lrec);
+        mAmb[0] = _rec.amb[0]; mAmb[1] = _rec.amb[1]; mAmb[2] = _rec.amb[2];
+        mDiff[0] = _rec.diff[0]; mDiff[1] = _rec.diff[1]; mDiff[2] = _rec.diff[2];
+        return true;
+      } else if( right_hit ) {
+        _rec.copyData(rrec);
+        mAmb[0] = _rec.amb[0]; mAmb[1] = _rec.amb[1]; mAmb[2] = _rec.amb[2];
+        mDiff[0] = _rec.diff[0]; mDiff[1] = _rec.diff[1]; mDiff[2] = _rec.diff[2];
+        return true;
+      } else {
+        return false;
+      }
+      
+      
+    } 
+    // If BB was not hit at all. YEAH WE DON'T DO ANY CALCULATION!
+    else {
+      return false;
+    }
+    
+    
+  }
+  
+  
+  void printInfo() {
+  }
+
+  
+  
+};
+
+/**< combine: Get the bounding box from two bounding boxes */
+Box combine( Box _left, Box _right ) {
+
+  Box b = new Box();
+  if( _left.Pmin[0] < _right.Pmin[0] ) { b.Pmin[0] = _left.Pmin[0]; } else { b.Pmin[0] = _right.Pmin[0]; }
+  if( _left.Pmin[1] < _right.Pmin[1] ) { b.Pmin[1] = _left.Pmin[1]; } else { b.Pmin[1] = _right.Pmin[1]; }
+  if( _left.Pmin[2] < _right.Pmin[2] ) { b.Pmin[2] = _left.Pmin[2]; } else { b.Pmin[2] = _right.Pmin[2]; }  
+  
+  if( _left.Pmax[0] > _right.Pmax[0] ) { b.Pmax[0] = _left.Pmax[0]; } else { b.Pmax[0] = _right.Pmax[0]; }
+  if( _left.Pmax[1] > _right.Pmax[1] ) { b.Pmax[1] = _left.Pmax[1]; } else { b.Pmax[1] = _right.Pmax[1]; }
+  if( _left.Pmax[2] > _right.Pmax[2] ) { b.Pmax[2] = _left.Pmax[2]; } else { b.Pmax[2] = _right.Pmax[2]; }  
+  
+  return b;
+}
+
 /****************************
  * @class Box
  ****************************/
 class Box extends Primitive {
   
-  public pt Pmin = new pt();
-  public pt Pmax = new pt();
+  public float[] Pmin = new float[3];
+  public float[] Pmax = new float[3] ;
   
   /**< @function Constructor */
   Box() {
     super( sBoxType );
 
-    Pmin.x = 0; Pmin.y = 0; Pmin.z = 0;
-    Pmax.x = 0; Pmax.y = 0; Pmax.z = 0;    
+    Pmin[0] = 0; Pmin[1] = 0; Pmin[2] = 0;
+    Pmax[0] = 0; Pmax[1] = 0; Pmax[2] = 0;    
   }
 
   /**< setBounds */
    void setBounds( pt min, pt max ) {
-     Pmin.x = min.x; Pmin.y = min.y; Pmin.z = min.z;
-     Pmax.x = max.x; Pmax.y = max.y; Pmax.z = max.z;     
+     Pmin[0] = min.x; Pmin[1] = min.y; Pmin[2] = min.z;
+     Pmax[0] = max.x; Pmax[1] = max.y; Pmax[2] = max.z;     
    }
    
    void set( float xmin, float ymin, float zmin, float xmax, float ymax, float zmax ) {
-     Pmin.x = xmin; Pmin.y = ymin; Pmin.z = zmin;
-     Pmax.x = xmax; Pmax.y = ymax; Pmax.z = zmax;     
+     Pmin[0] = xmin; Pmin[1] = ymin; Pmin[2] = zmin;
+     Pmax[0] = xmax; Pmax[1] = ymax; Pmax[2] = zmax;     
    }
 
   /** @function copyData */
   void copyData( Box _box ) {
 
-    Pmin.x = _box.Pmin.x; Pmin.y = _box.Pmin.y; Pmin.z = _box.Pmin.z;
-    Pmax.x = _box.Pmax.x; Pmax.y = _box.Pmax.y; Pmax.z = _box.Pmax.z;
+    Pmin[0] = _box.Pmin[0]; Pmin[1] = _box.Pmin[1]; Pmin[2] = _box.Pmin[2];
+    Pmax[0] = _box.Pmax[0]; Pmax[1] = _box.Pmax[1]; Pmax[2] = _box.Pmax[2];
     
     setDiffuseCoeff( _box.mDiff[0], _box.mDiff[1], _box.mDiff[2] );
     setAmbienceCoeff( _box.mAmb[0], _box.mAmb[1], _box.mAmb[2] );
@@ -305,11 +481,11 @@ class Box extends Primitive {
 
     // Plane X    
     if( _R.T.x == 0 ) {
-      if( _R.P.x < Pmin.x || _R.P.x > Pmax.x ) { return false; }
+      if( _R.P.x < Pmin[0] || _R.P.x > Pmax[0] ) { return false; }
     }
     
-    t1 = (Pmin.x - _R.P.x) / _R.T.x; 
-    t2 = (Pmax.x - _R.P.x) / _R.T.x;      
+    t1 = (Pmin[0] - _R.P.x) / _R.T.x; 
+    t2 = (Pmax[0] - _R.P.x) / _R.T.x;      
 
     nx.x = -1; nx.y = 0; nx.z = 0;
     
@@ -321,11 +497,11 @@ class Box extends Primitive {
 
     // Plane Y
     if( _R.T.y == 0 ) {
-      if( _R.P.y < Pmin.y || _R.P.y > Pmax.y ) { return false; }
+      if( _R.P.y < Pmin[1] || _R.P.y > Pmax[1] ) { return false; }
     }
     
-    t1 = (Pmin.y - _R.P.y) / _R.T.y;
-    t2 = (Pmax.y - _R.P.y) / _R.T.y;      
+    t1 = (Pmin[1] - _R.P.y) / _R.T.y;
+    t2 = (Pmax[1] - _R.P.y) / _R.T.y;      
 
     ny.x = 0; ny.y = -1; ny.z = 0;
     
@@ -337,11 +513,11 @@ class Box extends Primitive {
 
     // Plane Z
     if( _R.T.z == 0 ) {
-      if( _R.P.z < Pmin.z || _R.P.z > Pmax.z ) { return false; }
+      if( _R.P.z < Pmin[2] || _R.P.z > Pmax[2] ) { return false; }
     }
     
-    t1 = (Pmin.z - _R.P.z) / _R.T.z;
-    t2 = (Pmax.z - _R.P.z) / _R.T.z;      
+    t1 = (Pmin[2] - _R.P.z) / _R.T.z;
+    t2 = (Pmax[2] - _R.P.z) / _R.T.z;      
 
     nz.x = 0; nz.y = 0; nz.z = -1;
     
@@ -374,7 +550,8 @@ class Triangle extends Primitive {
   
   /** Constructor */
   Triangle() {
-    super( sTriangleType );    
+    super( sTriangleType );  
+    bb = new Box();  
     for( int i = 0; i < 3; ++i ) {
       mV[i] = new pt();
     }
@@ -404,23 +581,21 @@ class Triangle extends Primitive {
   /** ........................*/  
   /**< Calculate bounding box */
   /** ........................*/    
-  boolean calculateBB() { 
-  
-    bmin[0] = 1000; bmin[1] = 1000; bmin[2] = 1000;
-    bmax[0] = -1000; bmax[1] = -1000; bmax[2] = -1000;
+  boolean initBB() { 
+    bb.Pmin[0] = 1000; bb.Pmin[1] = 1000; bb.Pmin[2] = 1000;
+    bb.Pmax[0] = -1000; bb.Pmax[1] = -1000; bb.Pmax[2] = -1000;
     
-    if( mV[0].x < bmin[0] ) { bmin[0] = mV[0].x; }  if( mV[0].x > bmax[0] ) { bmax[0] = mV[0].x; }
-    if( mV[1].x < bmin[0] ) { bmin[0] = mV[1].x; }  if( mV[1].x > bmax[0] ) { bmax[0] = mV[1].x; } 
-    if( mV[2].x < bmin[0] ) { bmin[0] = mV[2].x; }  if( mV[2].x > bmax[0] ) { bmax[0] = mV[2].x; } 
+    if( mV[0].x < bb.Pmin[0] ) { bb.Pmin[0] = mV[0].x; }  if( mV[0].x > bb.Pmax[0] ) { bb.Pmax[0] = mV[0].x; }
+    if( mV[1].x < bb.Pmin[0] ) { bb.Pmin[0] = mV[1].x; }  if( mV[1].x > bb.Pmax[0] ) { bb.Pmax[0] = mV[1].x; } 
+    if( mV[2].x < bb.Pmin[0] ) { bb.Pmin[0] = mV[2].x; }  if( mV[2].x > bb.Pmax[0] ) { bb.Pmax[0] = mV[2].x; } 
 
-    if( mV[0].y < bmin[1] ) { bmin[1] = mV[0].y; }  if( mV[0].y > bmax[1] ) { bmax[1] = mV[0].y; }
-    if( mV[1].y < bmin[1] ) { bmin[1] = mV[1].y; }  if( mV[1].y > bmax[1] ) { bmax[1] = mV[1].y; } 
-    if( mV[2].y < bmin[1] ) { bmin[1] = mV[2].y; }  if( mV[2].y > bmax[1] ) { bmax[1] = mV[2].y; } 
+    if( mV[0].y < bb.Pmin[1] ) { bb.Pmin[1] = mV[0].y; }  if( mV[0].y > bb.Pmax[1] ) { bb.Pmax[1] = mV[0].y; }
+    if( mV[1].y < bb.Pmin[1] ) { bb.Pmin[1] = mV[1].y; }  if( mV[1].y > bb.Pmax[1] ) { bb.Pmax[1] = mV[1].y; } 
+    if( mV[2].y < bb.Pmin[1] ) { bb.Pmin[1] = mV[2].y; }  if( mV[2].y > bb.Pmax[1] ) { bb.Pmax[1] = mV[2].y; } 
 
-    if( mV[0].z < bmin[2] ) { bmin[2] = mV[0].z; }  if( mV[0].z > bmax[2] ) { bmax[2] = mV[0].z; }
-    if( mV[1].z < bmin[2] ) { bmin[2] = mV[1].z; }  if( mV[1].z > bmax[2] ) { bmax[2] = mV[1].z; } 
-    if( mV[2].z < bmin[2] ) { bmin[2] = mV[2].z; }  if( mV[2].z > bmax[2] ) { bmax[2] = mV[2].z; } 
-
+    if( mV[0].z < bb.Pmin[2] ) { bb.Pmin[2] = mV[0].z; }  if( mV[0].z > bb.Pmax[2] ) { bb.Pmax[2] = mV[0].z; }
+    if( mV[1].z < bb.Pmin[2] ) { bb.Pmin[2] = mV[1].z; }  if( mV[1].z > bb.Pmax[2] ) { bb.Pmax[2] = mV[1].z; } 
+    if( mV[2].z < bb.Pmin[2] ) { bb.Pmin[2] = mV[2].z; }  if( mV[2].z > bb.Pmax[2] ) { bb.Pmax[2] = mV[2].z; } 
 
     
     return true; 
@@ -472,6 +647,9 @@ class Triangle extends Primitive {
         _rec.point = I;
         _rec.normal = n;
        
+        _rec.amb[0] = mAmb[0]; _rec.amb[1] = mAmb[1]; _rec.amb[2] = mAmb[2];
+        _rec.diff[0] = mDiff[0]; _rec.diff[1] = mDiff[1]; _rec.diff[2] = mDiff[2];
+        
        return true;
     
   }
@@ -518,7 +696,6 @@ class Sphere extends Primitive {
   /** copyData */
   void copyData( Sphere _sphere ) {
     mC.x = _sphere.mC.x; mC.y = _sphere.mC.y; mC.z = _sphere.mC.z;
-    print("Center: " + mC.x + " " + mC.y + " " + mC.z + "\n");
     mR = _sphere.mR;
     setDiffuseCoeff( _sphere.mDiff[0], _sphere.mDiff[1], _sphere.mDiff[2] );
     setAmbienceCoeff( _sphere.mAmb[0], _sphere.mAmb[1], _sphere.mAmb[2] );
@@ -578,12 +755,16 @@ class hitRecord {
   public float dist;
   public pt point;
   public vec normal;  
+  float[] amb = new float[3];
+  float[] diff = new float[3];
   
   /**< copyData */
   void copyData( hitRecord _hr ) {
     dist = _hr.dist;
     point = new pt( _hr.point.x, _hr.point.y, _hr.point.z );
-    normal = new vec( _hr.normal.x, _hr.normal.y, _hr.normal.z );     
+    normal = new vec( _hr.normal.x, _hr.normal.y, _hr.normal.z );  
+    amb[0] = _hr.amb[0]; amb[1] = _hr.amb[1]; amb[2] = _hr.amb[2];
+    diff[0] = _hr.diff[0]; diff[1] = _hr.diff[1]; diff[2] = _hr.diff[2];    
   }
 }
 

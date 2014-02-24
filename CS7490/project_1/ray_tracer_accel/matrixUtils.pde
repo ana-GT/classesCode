@@ -44,7 +44,7 @@ public class naiveStack {
  */
 public class objectStack {
   private int mSize = 0;
-  private static final int MAX_CAPACITY = 1600;
+  private static final int MAX_CAPACITY = 70000;
   private Primitive mPrims[];
   
   /** Constructor */

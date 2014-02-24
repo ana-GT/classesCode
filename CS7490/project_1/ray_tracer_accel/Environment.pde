@@ -83,27 +83,24 @@ String[] gNamedPrimitiveNames = new String[gMaxNumNamedPrimitives];
     void addPrimitive( Primitive _primitive ) {
       
       if( _primitive.getType() == sSphereType ) {
-        mPrimitives[mNumPrimitives] = new Sphere();
-        ((Sphere)mPrimitives[mNumPrimitives]).copyData( (Sphere)_primitive );        
+        mPrimitives[mNumPrimitives] = (Sphere)_primitive;
       } 
       else if( _primitive.getType() == sTriangleType ) {
-        mPrimitives[mNumPrimitives] = new Triangle();
-        ((Triangle)mPrimitives[mNumPrimitives]).copyData( (Triangle)_primitive );        
+        mPrimitives[mNumPrimitives] = (Triangle)_primitive;
       } 
       else if( _primitive.getType() == sInstanceType ) {
-        mPrimitives[mNumPrimitives] = new Instance();
-        ((Instance)mPrimitives[mNumPrimitives]).copyData( (Instance)_primitive );        
+        mPrimitives[mNumPrimitives] = (Instance)_primitive;
       } 
       else if( _primitive.getType() == sBoxType ) {
-        mPrimitives[mNumPrimitives] = new Box();
-        ((Box)mPrimitives[mNumPrimitives]).copyData( (Box)_primitive );        
+        mPrimitives[mNumPrimitives] = (Box) _primitive;
       } 
       else if( _primitive.getType() == sListType ) {
-        mPrimitives[mNumPrimitives] = new List();
-        ((List)mPrimitives[mNumPrimitives]).copyData( (List)_primitive );  
-        ((List)mPrimitives[mNumPrimitives]).setBoundingBox(); 
+        mPrimitives[mNumPrimitives] = (List) _primitive;
+        ((List)mPrimitives[mNumPrimitives]).initBB(); 
       }
-
+      else if( _primitive.getType() == sBVHType ) {
+        mPrimitives[mNumPrimitives] = (BVH) _primitive;
+      }
 
       mNumPrimitives++;
     }                
@@ -137,7 +134,6 @@ String[] gNamedPrimitiveNames = new String[gMaxNumNamedPrimitives];
       
       gNamedPrimitiveNames[gNumNamedPrimitives] = _name;
       gNumNamedPrimitives++;
-      print("Num named primitives: "+gNumNamedPrimitives + "\n");
     }   
 
     /** getInstanceInd */

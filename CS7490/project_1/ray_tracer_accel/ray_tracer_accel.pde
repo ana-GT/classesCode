@@ -13,6 +13,7 @@ int sSphereType = 2;
 int sInstanceType = 3;
 int sBoxType = 4;
 int sListType = 5;
+int sBVHType = 6;
 
 Environment gEnv = new Environment();
 RayTracer gRayTracer = new RayTracer();
@@ -136,7 +137,6 @@ void interpreter(String filename) {
     /**< Begin list */
     else if( token[0].equals("begin_list") ) {
       readingList = true;  
-      list = new List();
     } 
     
     /**< End list */
@@ -144,6 +144,7 @@ void interpreter(String filename) {
       readingList = false;
       
       // Fill the list with the objects in the stack
+      list = new List();
       int n = mObjStack.getSize();
       for( int j = 0; j < n; ++j ) {
         list.addObject( mObjStack.pop() );
@@ -163,13 +164,27 @@ void interpreter(String filename) {
     /**< Instance */    
     else if( token[0].equals("instance") ) {
       int ind = gEnv.getInstanceInd( token[1] );
-      mMat.print();
       Instance inst = new Instance( ind, mMat );
       gEnv.addPrimitive( inst );
     }
     
     /**< End acceleration structure */
     else if( token[0].equals("end_accel") ) {
+      
+      readingList = false;
+      
+      // Fill the list with the objects in the stack
+      int n = mObjStack.getSize();
+      Primitive[] objects = new Primitive[n];
+      for( int j = 0; j < n; ++j ) {
+        objects[j] = (Triangle)(mObjStack.pop());
+        ((Triangle)objects[j]).initBB();
+      }      
+      BVH bvh = new BVH( objects, 0 );
+      
+      // Save the list
+      gEnv.addPrimitive( bvh );
+      
     }
     
     /**< Reset timer */
