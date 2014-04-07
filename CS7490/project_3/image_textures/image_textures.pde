@@ -4,13 +4,14 @@
 // @author A. Huaman based on template code of Prof. Greg Turk
 ///////////////////////////////////////////////////////////////////////
 
-int screen_width = 300;
-int screen_height = 300;
+int screen_width = 600;
+int screen_height = 600;
 
 int sTriangleType = 0;
 int sSphereType = 1;
 
 int sPointLight = 0;
+
 int sDiskLight = 1;
 
 int sSurfaceType = 0;
@@ -50,7 +51,7 @@ void setup() {
 
 /**
  * @function keyPressed
- * @brief Press key 1 to 9 and 0 to run different test cases.
+ * @brief Press key 1 to 8 and 0 to run different test cases.
  */
 void keyPressed() {
   initInterpreter();
@@ -60,6 +61,9 @@ void keyPressed() {
     case '3':  interpreter("data/t03.cli"); break;
     case '4':  interpreter("data/t04.cli"); break;
     case '5':  interpreter("data/t05.cli"); break;
+    case '6':  interpreter("data/t06.cli"); break;
+    case '7':  interpreter("data/t07.cli"); break;
+    case '8':  interpreter("data/t08.cli"); break;
     case 'q':  exit(); break;
   }
 }
@@ -148,6 +152,7 @@ void interpreter(String filename) {
       ((Shiny)surface).setSpecCoeff( csr, csg, csb );
       ((Shiny)surface).setSpecPower( specPower );
       ((Shiny)surface).setKref( Kref );     
+      print("Spec power: " + specPower + " Kref: " + Kref + "\n");
     }
     
     /** Image texture */

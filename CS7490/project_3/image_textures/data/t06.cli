@@ -1,6 +1,6 @@
-# reflective sphere on checkerboard
+# reflective sphere on checkerboard, with mipmaps
 
-mipmap off
+mipmap on
 
 fov 60
 point_light  -2 3 0  1 1 1
@@ -40,4 +40,4 @@ end
 
 pop
 
-write t05.png
+write t06.png

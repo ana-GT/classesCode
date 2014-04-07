@@ -128,9 +128,9 @@
        pt deye = new pt();
        float dr = sqrt( (float)Math.random() );
        float dt = 2*3.14157*(float)Math.random();
-       deye.x = mE.x + mRadius*dr*cos(dt);
-       deye.y = mE.y + mRadius*dr*sin(dt);
-       deye.z = mE.z;     
+       deye.x = _R.P.x + mRadius*dr*cos(dt);
+       deye.y = _R.P.y + mRadius*dr*sin(dt);
+       deye.z = _R.P.z;     
      
        // Use as ray the ray between point in focal plane and randomized lens point
        vec newV = new vec(Fp.x - deye.x, Fp.y - deye.y, Fp.z - deye.z);
@@ -217,7 +217,7 @@
      float amb[] = gEnv.mPrimitives[mMinInd].mSurface.mAmb;
      float diff[] = gEnv.mPrimitives[mMinInd].mSurface.mDiff;
           
-     // Ambient ligthing     
+     // Ambient term     
      radiance[0] = amb[0]*1.0;
      radiance[1] = amb[1]*1.0; 
      radiance[2] = amb[2]*1.0;
@@ -227,11 +227,39 @@
        ray shadow_ray = (gEnv.mLights[i]).calc_shadow_ray( _objPt.P );
        // If no in shadow 
        if( in_shadow( shadow_ray, gEnv.mLights[i] ) == false ) {
+   
+         // Diffuse term       
          float NL = abs( d( _objPt.N, shadow_ray.T ) );
          float Ilight[] = gEnv.mLights[i].mRGB;
          radiance[0] = radiance[0] + Ilight[0]*NL*diff[0];
          radiance[1] = radiance[1] + Ilight[1]*NL*diff[1];
          radiance[2] = radiance[2] + Ilight[2]*NL*diff[2];         
+         
+         // Shiny term
+         
+         if( gEnv.mPrimitives[mMinInd].mSurface.getType() == sShinyType ) {
+           
+           float shiny[] = ((Shiny)gEnv.mPrimitives[mMinInd].mSurface).mSpec;
+           float specPower = ((Shiny)gEnv.mPrimitives[mMinInd].mSurface).mSpecPower;
+           
+           vec Lm = shadow_ray.T; Lm.normalize();
+           vec N = _objPt.N; N.normalize();
+           vec V = V(-1,_R.T); V.normalize();
+          
+          vec H = A(Lm, V); H.normalize();
+          float cost = d( N, H );
+          if( cost < 0 ) { cost = 0; } 
+          
+           float ctn = (float)Math.pow( (double)cost, (double)specPower );       
+           radiance[0] = radiance[0] + Ilight[0]*shiny[0]*ctn;
+           radiance[1] = radiance[1] + Ilight[1]*shiny[1]*ctn;
+           radiance[2] = radiance[2] + Ilight[2]*shiny[2]*ctn;     
+
+    
+
+         }
+            
+
        }  
        else {
          // Nothing
