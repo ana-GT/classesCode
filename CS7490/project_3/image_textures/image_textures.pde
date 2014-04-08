@@ -18,6 +18,8 @@ int sSurfaceType = 0;
 int sDiffuseType = 1;
 int sShinyType = 2;
 
+int MAX_DEPTH = 4;
+
 
 Environment gEnv = new Environment();
 RayTracer gRayTracer = new RayTracer();
@@ -34,6 +36,9 @@ int timer;
   naiveStack mStack;
   PMatrix3D mMat;
   Surface surface;
+  float cu[] = new float[3]; 
+  float cv[] = new float[3]; 
+  int uvi;
   // -----------------------------------------
 
 
@@ -158,6 +163,7 @@ void interpreter(String filename) {
     /** Image texture */
     else if( token[0].equals("image_texture") ) {
       imageTexture = token[1];
+      surface.setImageTexture_filename( imageTexture );
     }
 
     else if( token[0].equals( "texture_coord" ) ) {
@@ -170,12 +176,21 @@ void interpreter(String filename) {
       readingPolygon = true;
       polygonIndex = 0;
       triangle = new Triangle();
+      uvi = 0; coord_u = -1; coord_v = -1;
+      cu = new float[3];
+      cv = new float[3];
     }
     
     /** Finish reading polygon */
     else if (token[0].equals("end")) {
-      triangle.setSurface( surface );
-      gEnv.addPrimitive( triangle );
+      triangle.setSurface( surface );      
+      // If textures were stored
+      if( uvi == 3 ) {
+        triangle.setVertexColor( cu, cv );        
+      }
+      triangle.printInfo();
+      
+      gEnv.addPrimitive( triangle );      
       readingPolygon = false;
     }
     
@@ -185,6 +200,12 @@ void interpreter(String filename) {
       vx = Float.parseFloat(token[1]);
       vy = Float.parseFloat(token[2]);
       vz = Float.parseFloat(token[3]);    
+        
+      if( coord_u != -1 && coord_v != -1 ) {
+        cu[uvi] = coord_u; cv[uvi] = coord_v;
+        uvi++;
+      }  
+        
         
       // Apply matrix in stack
       float[] vm = new float[3];

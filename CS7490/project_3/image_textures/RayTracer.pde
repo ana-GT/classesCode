@@ -86,14 +86,14 @@
        for( int y =0; y < mny; ++y ) {
          if( mNumRaysPerPixel == 1 ) {
            ray R = ray_through_pixel( x,y, true );
-           pixelColor = Trace( R );
+           pixelColor = Trace( R, 0 );
          } else {
            pixelColor[0] = 0; pixelColor[1] = 0; pixelColor[2] = 0;
            int[] temp = new int[3];
            // Generate random rays
            for( int i = 0; i < mNumRaysPerPixel; ++i ) {
              ray R = ray_through_pixel( x,y, false );
-             temp = Trace( R );
+             temp = Trace( R, 0 );
              pixelColor[0] = pixelColor[0] + temp[0];
              pixelColor[1] = pixelColor[1] + temp[1];
              pixelColor[2] = pixelColor[2] + temp[2];             
@@ -114,7 +114,7 @@
     * @function Trace
     * @brief Check if there is ray intersection. If so, shade it, if not put background color
     */
-   int[] Trace( ray _R ) {
+   int[] Trace( ray _R, int _depth ) {
      
       ray newR = new ray();
      
@@ -144,10 +144,9 @@
      objPt object_point =  new objPt();
      object_point = closest_intersection( newR );
      if( object_point.is_set() ) {
-       return Shade( object_point, newR );
+       return Shade( object_point, newR, _depth );
      } else {
-       
-       return gEnv.mBgColorInt;
+        return gEnv.mBgColorInt;
      }
 
    }
@@ -209,21 +208,19 @@
     * @function Shade
     * @brief Return the color of the pixel on surface 
     */
-   int[] Shade( objPt _objPt, ray _R ) {
+   int[] Shade( objPt _objPt, ray _R, int _depth ) {
      
      int pixelColor[] = new int[3];
      float radiance[] = new float[3];
      
-     float amb[] = gEnv.mPrimitives[mMinInd].mSurface.mAmb;
-     float diff[] = gEnv.mPrimitives[mMinInd].mSurface.mDiff;
-          
+     if( mMinInd != _objPt.objIndex ) { print ("Something fishy \n"); }
+     float amb[] = gEnv.mPrimitives[_objPt.objIndex].getAmb();
+     float diff[] = gEnv.mPrimitives[_objPt.objIndex].getDiff( _objPt.P );
+                 
      // Ambient term     
-     radiance[0] = amb[0]*1.0;
-     radiance[1] = amb[1]*1.0; 
-     radiance[2] = amb[2]*1.0;
+     radiance[0] = amb[0]*1.0; radiance[1] = amb[1]*1.0;  radiance[2] = amb[2]*1.0;
      
      for( int i = 0; i < gEnv.mNumLights; ++i ) {
-       //ray shadow_ray = calc_shadow_ray( _objPt.P, gEnv.mLights[i] );
        ray shadow_ray = (gEnv.mLights[i]).calc_shadow_ray( _objPt.P );
        // If no in shadow 
        if( in_shadow( shadow_ray, gEnv.mLights[i] ) == false ) {
@@ -231,16 +228,17 @@
          // Diffuse term       
          float NL = abs( d( _objPt.N, shadow_ray.T ) );
          float Ilight[] = gEnv.mLights[i].mRGB;
+    
+         
          radiance[0] = radiance[0] + Ilight[0]*NL*diff[0];
          radiance[1] = radiance[1] + Ilight[1]*NL*diff[1];
          radiance[2] = radiance[2] + Ilight[2]*NL*diff[2];         
          
-         // Shiny term
-         
-         if( gEnv.mPrimitives[mMinInd].mSurface.getType() == sShinyType ) {
+         // Shiny term         
+         if( gEnv.mPrimitives[_objPt.objIndex].mSurface.getType() == sShinyType ) {
            
-           float shiny[] = ((Shiny)gEnv.mPrimitives[mMinInd].mSurface).mSpec;
-           float specPower = ((Shiny)gEnv.mPrimitives[mMinInd].mSurface).mSpecPower;
+           float shiny[] = ((Shiny)gEnv.mPrimitives[_objPt.objIndex].mSurface).mSpec;
+           float specPower = ((Shiny)gEnv.mPrimitives[_objPt.objIndex].mSurface).mSpecPower;
            
            vec Lm = shadow_ray.T; Lm.normalize();
            vec N = _objPt.N; N.normalize();
@@ -255,7 +253,22 @@
            radiance[1] = radiance[1] + Ilight[1]*shiny[1]*ctn;
            radiance[2] = radiance[2] + Ilight[2]*shiny[2]*ctn;     
 
-    
+           // If reflectance
+           if( ((Shiny)gEnv.mPrimitives[_objPt.objIndex].mSurface).isReflective() && _depth < MAX_DEPTH ) {   
+               float Kref = ((Shiny)gEnv.mPrimitives[_objPt.objIndex].mSurface).mKref;          
+               // Get reflected ray
+               ray reflectedRay = new ray();
+               vec Vr = _R.T; Vr.normalize();
+               float c1 = -2*d(Vr,N);
+               vec dir = A( Vr, V( c1, N ) );
+               dir.normalize();
+               //vec dir = M( _R.T, V(2*d(_R.T,N), _R.T) ); dir.normalize();
+               reflectedRay.set( P(_objPt.P, 0.005, dir), dir );
+               int reflection255[] = Trace( reflectedRay, _depth + 1 );
+               radiance[0] = radiance[0] + Kref*( (float)reflection255[0] / 255.0 );
+               radiance[1] = radiance[1] + Kref*( (float)reflection255[1] / 255.0 );
+               radiance[2] = radiance[2] + Kref*( (float)reflection255[2] / 255.0 );     
+           }
 
          }
             

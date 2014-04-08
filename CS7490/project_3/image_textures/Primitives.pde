@@ -6,9 +6,11 @@
    public int mType;
    public float[] mDiff = new float[3];
    public float[] mAmb = new float[3];   
+   public ImageTexture mTexture;
+   public boolean mIsTextured;
    
-   Surface() { mType = sSurfaceType; }
-   Surface( int _type ) { mType = _type; }
+   Surface() { mType = sSurfaceType; mIsTextured = false; }
+   Surface( int _type ) { mType = _type; mIsTextured = false; }
    
    int getType() { return mType; }
    
@@ -22,6 +24,12 @@
      mAmb[0] = _car; 
      mAmb[1] = _cag; 
      mAmb[2] = _cab; 
+   }
+   
+   /** Set Image texture */
+   void setImageTexture_filename( String _filename ) {
+     mTexture = new ImageTexture( _filename );
+     mIsTextured = true;
    }
    
    
@@ -122,6 +130,15 @@ class Primitive {
     
   }  
   
+  /** get Diffuse color */
+  float[] getDiff( pt _P ) {
+    return mSurface.mDiff;
+  }
+  
+  /** get Ambience color */
+  float[] getAmb() {
+    return mSurface.mAmb;
+  }
   
   /** printInfo() */
   void printInfo() { println("Primitive info default - YOU MUST INSTANCE THIS!"); }
@@ -133,6 +150,8 @@ class Primitive {
 class Triangle extends Primitive {
 
   public pt[] mV = new pt[3];
+  public float[] mVu = new float[3];
+  public float[] mVv = new float[3];  
   
   /** Constructor */
   Triangle() {
@@ -140,6 +159,11 @@ class Triangle extends Primitive {
     for( int i = 0; i < 3; ++i ) {
       mV[i] = new pt();
     }
+  }
+
+  /** If triangle is textured */
+  void setVertexColor( float[] _u, float[] _v ) {
+    mVu = _u; mVv = _v;
   }
   
   /** @function addVertex */
@@ -210,6 +234,29 @@ class Triangle extends Primitive {
        
        return true;
     
+  }
+  
+    
+  /** get Diffuse color */
+  float[] getDiff( pt _P ) {
+
+    if( mSurface.mIsTextured == true ) {
+      // Get the barycentric coordinates of this point
+      float[] barCoord = getBarycentricCoordinates( mV[0], mV[1], mV[2], _P );
+      float cu = mVu[0]*barCoord[0] + mVu[1]*barCoord[1]  + mVu[2]*barCoord[2];
+      float cv = mVv[0]*barCoord[0] + mVv[1]*barCoord[1]  + mVv[2]*barCoord[2];      
+      //print( " u: " + u + " v: " + v + "\n" );
+      float widthI = (float)(mSurface.mTexture.image.width);
+      float heightI = (float)(mSurface.mTexture.image.height);      
+      int pu = (int) ( widthI * cu );
+      int pv = (int) ( heightI * (1.0 - cv) );
+      color c = mSurface.mTexture.image.pixels[pu + pv*(int)widthI]; //get_color( pu, pv ,0);
+      float col[] = new float[3]; 
+      col[0] = red(c) / 255.0; col[1] = green(c) / 255.0; col[2] = blue(c) / 255.0;
+      return col;
+    } else {
+      return mSurface.mDiff;
+    }
   }
   
   
@@ -291,6 +338,44 @@ class Sphere extends Primitive {
     return true;
    }
  }
+  
+    /** get Diffuse color */
+  float[] getDiff( pt _P ) {
+
+    if( mSurface.mIsTextured == true ) {
+     
+      // Get spherical coordinates
+      vec Ve = new vec( 1,0,0 );
+      vec Vn = new vec( 0,0,1);
+      vec Vp = V( mC, _P ); Vp.normalize();
+      float phi = acos( -d(Vn, Vp) );
+      float theta = acos( d( Vp, Ve) / sin(phi) ) / (2*3.14157);
+      
+      
+      float cu;
+      float cv;
+      
+      if( d( N(Vn, Ve), Vp ) > 0 ) {
+        cu = theta;
+      }  else {
+        cu = 1.0 - theta;
+      }    
+      
+      cv = phi / 3.14157;      
+
+      float widthI = (float)(mSurface.mTexture.image.width);
+      float heightI = (float)(mSurface.mTexture.image.height);      
+      int pu = (int) ( widthI * cu );
+      int pv = (int) ( heightI * (1.0-cv) );
+      color c = mSurface.mTexture.image.pixels[pu + pv*(int)widthI]; //get_color( pu, pv ,0);
+      float col[] = new float[3]; 
+      col[0] = red(c) / 255.0; col[1] = green(c) / 255.0; col[2] = blue(c) / 255.0;
+      return col;
+    } else {
+      return mSurface.mDiff;
+    }
+  }
+  
   
   /**
    * @function printInfo

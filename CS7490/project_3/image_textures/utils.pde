@@ -19,6 +19,25 @@ class objPt {
 }; 
 
 
+/** Get barycentric coordinates of point P in triangle ABC */
+float[] getBarycentricCoordinates( pt _A, pt _B, pt _C, pt _P ) {
+ 
+  
+  float b[] = new float[3];
+  vec n = N( V(_A, _B ), V( _A, _C ) );
+  vec na = N( V(_B, _C ), V( _B, _P ) ); 
+  vec nb = N( V(_C, _A ), V( _C, _P ) ); 
+  vec nc = N( V(_A, _B ), V( _A, _P ) ); 
+  float n2 = n.norm()*n.norm();
+  
+  b[0] = abs(d( n, na )) / n2; 
+  b[1] = abs(d( n, nb )) / n2;
+  b[2] = abs(d( n, nc )) / n2;
+ 
+  return b;
+}
+
+
 /**
  * @class ray
  */

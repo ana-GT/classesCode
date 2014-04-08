@@ -28,6 +28,10 @@ texture_coord 0 1
 vertex  0 1 0
 end
 
+
+
+
+
 # sphere 0.5  0 0 -2
 
 write t03.png
