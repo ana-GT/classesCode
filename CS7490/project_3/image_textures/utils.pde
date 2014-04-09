@@ -44,16 +44,47 @@ float[] getBarycentricCoordinates( pt _A, pt _B, pt _C, pt _P ) {
 class ray {
   private pt P = new pt();
   private vec T = new vec();
+  protected int type;
   
-  ray() {};
+  ray() { type = sSimpleRayType; }
   ray set( pt _P, vec _T ) { 
     P = new pt(_P.x, _P.y, _P.z); 
     T = _T; return this;
   }
   
+  int getType() { return type; }
+  
   pt P() { return P; }
   vec T() { return T; }
 };
+
+/**
+ * @class mipMap
+ */
+class rayMipMap extends ray {
+  
+  public ray rUp;
+  public ray rRight;
+  
+  public objPt oUp;
+  public objPt oRight;
+  
+  rayMipMap() { 
+    type = sMipMapRayType;
+    rUp = new ray();
+    rRight = new ray(); 
+    oUp = new objPt();
+    oRight = new objPt();
+  };
+  
+  void setRays( ray _Rup, ray _Rright ) {
+    rUp.set( _Rup.P, _Rup.T );
+    rRight.set( _Rright.P, _Rright.T );
+  }
+  
+  
+  
+}
 
 
 // Geometry tools I used on my class in  Fall 2012 - CS 4640 (Computer Graphics)

@@ -1,5 +1,5 @@
 # two textured triangles (making a square)
-
+mipmap on
 fov 60
 point_light 0 0 0 1 1 1
 background 0.1 0.1 0.2

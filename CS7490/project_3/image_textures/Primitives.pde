@@ -131,6 +131,15 @@ class Primitive {
     }
     
   }  
+
+  /** get Diffuse color when using mipMap */
+  float[] getDiff( pt _P, rayMipMap _R ) {
+
+      // You are never supposed to call this from Primitive base class    
+      return getDiff( _P );
+
+  }
+
   
   /** get Diffuse color */
   float[] getDiff( pt _P ) {
@@ -238,27 +247,85 @@ class Triangle extends Primitive {
     
   }
   
+  
     
   /** get Diffuse color */
   float[] getDiff( pt _P ) {
 
     if( mSurface.mIsTextured == true ) {
-      // Get the barycentric coordinates of this point
-      float[] barCoord = getBarycentricCoordinates( mV[0], mV[1], mV[2], _P );
-      float cu = mVu[0]*barCoord[0] + mVu[1]*barCoord[1]  + mVu[2]*barCoord[2];
-      float cv = mVv[0]*barCoord[0] + mVv[1]*barCoord[1]  + mVv[2]*barCoord[2];      
-      //print( " u: " + u + " v: " + v + "\n" );
-      float widthI = (float)(mSurface.mTexture.image.width);
-      float heightI = (float)(mSurface.mTexture.image.height);      
-      int pu = (int) ( widthI * cu );
-      int pv = (int) ( heightI * (1.0 - cv) );
-      color c = mSurface.mTexture.image.pixels[pu + pv*(int)widthI]; //get_color( pu, pv ,0);
+      
+      float tuv[] = new float[2]; tuv = get_tuv( _P );
+      PVector uvd = new PVector();
+      uvd.x = tuv[0]; uvd.y = tuv[1]; uvd.z = 0;
+      PVector c = mSurface.mTexture.color_value( uvd ); 
+      
       float col[] = new float[3]; 
-      col[0] = red(c) / 255.0; col[1] = green(c) / 255.0; col[2] = blue(c) / 255.0;
+      col[0] = c.x / 255.0; col[1] = c.y / 255.0; col[2] = c.z / 255.0;
       return col;
     } else {
       return mSurface.mDiff;
     }
+  }
+  
+  
+    /** get Diffuse color when using mipMap */
+  float[] getDiff( pt _P, rayMipMap _R ) {
+    
+    if(  mSurface.mIsTextured == true ) {
+
+      // Check that all points are in the object
+      if( _R.oUp.is_set() == false || _R.oRight.is_set() == false ){
+        return getDiff( _P );
+      }  
+      // Check that both fall in the same object (supposedly this one)
+      if( _R.oUp.objIndex != _R.oRight.objIndex ) {
+        return getDiff( _P );
+        
+      }
+      
+      // Now we can proceed
+      float tuv[] = new float[2]; tuv = get_tuv( _P );
+      float tu = tuv[0]; float tv = tuv[1];
+      
+      // Get the other 2 coordinates
+      float tuv1[] = new float[2]; tuv1 = get_tuv( _R.oUp.P );
+      float tu1 = tuv1[0]; float tv1 = tuv1[1];
+
+      float tuv2[] = new float[2]; tuv2 = get_tuv( _R.oRight.P );
+      float tu2 = tuv2[0]; float tv2 = tuv2[1];
+
+      // Get distance between points
+      float dist1 = sqrt( (tu-tu1)*(tu-tu1) + (tv-tv1)*(tv-tv1) );
+      float dist2 = sqrt( (tu-tu2)*(tu-tu2) + (tv-tv2)*(tv-tv2) );
+      
+      PVector uvd = new PVector();
+      uvd.x = tu; uvd.y = tv;
+      if( dist1 > dist2 ) { uvd.z = dist1; } else { uvd.z = dist2; }
+      
+      PVector c = mSurface.mTexture.color_value( uvd ); 
+      float col[] = new float[3]; 
+      col[0] = c.x / 255.0; col[1] = c.y / 255.0; col[2] = c.z / 255.0;
+      return col;
+
+    }  
+      
+    else {  
+      return mSurface.mDiff;
+    }
+  }
+ 
+
+  /** Get tuv : Coordinates of textures in [0 1] range */
+  float[] get_tuv( pt _P ) {
+  
+    float tuv[] = new float[2];
+    
+    // Get the barycentric coordinates of this point
+    float[] barCoord = getBarycentricCoordinates( mV[0], mV[1], mV[2], _P );
+    tuv[0] = mVu[0]*barCoord[0] + mVu[1]*barCoord[1]  + mVu[2]*barCoord[2];
+    tuv[1] = ( mVv[0]*barCoord[0] + mVv[1]*barCoord[1]  + mVv[2]*barCoord[2] );      
+    
+    return tuv;
   }
   
   
@@ -350,11 +417,6 @@ class Sphere extends Primitive {
       float dy = _P.y - mC.y;
       float dz = _P.z - mC.z;
       
-      //float theta = atan2( -dz, dx );
-     // float u = (theta + 3.1416 ) / (2*3.1416);
-      //float phi = acos( -dy / mR );
-      //float vi = phi / 3.1416;
-      
       float theta = atan2( -dy, dx );
       float u = (theta + 3.1416 ) / (2*3.1416);
       float phi = acos( dz / mR );
@@ -371,10 +433,9 @@ class Sphere extends Primitive {
       int pu = (int) ( widthI * cu );
       int pv = (int) ( heightI *(1.0- cv) );
       
-
-      color c = mSurface.mTexture.image.pixels[pu + pv*(int)widthI]; //get_color( pu, pv ,0);
+      PVector c = mSurface.mTexture.get_color( pu, pv, 0); 
       float col[] = new float[3]; 
-      col[0] = red(c) / 255.0; col[1] = green(c) / 255.0; col[2] = blue(c) / 255.0;
+      col[0] = c.x / 255.0; col[1] = c.y / 255.0; col[2] = c.z / 255.0;
       return col;
     } else {
       return mSurface.mDiff;

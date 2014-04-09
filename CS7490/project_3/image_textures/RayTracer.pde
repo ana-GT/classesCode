@@ -16,6 +16,7 @@
    public float mRadius;
    public float mFocalDist;
    public boolean mSetLensFlag;
+   public boolean mMipMap;
    
    public float mMinDist; int mMinInd; pt mMinPoint; vec mMinNormal;
    
@@ -28,7 +29,7 @@
      mnx_2 = mnx / 2;
      mny_2 = mny / 2;    
      mE = new pt(0,0,0); 
-
+     mMipMap = false;
      reset();
    }
 
@@ -85,8 +86,17 @@
      for( int x = 0; x < mnx; ++x ) {
        for( int y =0; y < mny; ++y ) {
          if( mNumRaysPerPixel == 1 ) {
-           ray R = ray_through_pixel( x,y, true );
-           pixelColor = Trace( R, 0 );
+           
+           // NOTICE MIPMAP IS ONLY USED WHEN USING 1 SINGLE RAY!!
+           if( mMipMap == true ) {
+             rayMipMap R = rayMipMap_through_pixel( x,y, true );
+             pixelColor = Trace( R, 0 );
+           } else {
+             ray R = ray_through_pixel( x,y, true );
+             pixelColor = Trace( R, 0 );
+             
+           }
+      
          } else {
            pixelColor[0] = 0; pixelColor[1] = 0; pixelColor[2] = 0;
            int[] temp = new int[3];
@@ -115,35 +125,54 @@
     * @brief Check if there is ray intersection. If so, shade it, if not put background color
     */
    int[] Trace( ray _R, int _depth ) {
-     
+           
       ray newR = new ray();
+      if( mMipMap == true ) { newR = new ray(); }
+      else { newR = new rayMipMap(); }
      
        // If using depth effect
       if( mSetLensFlag == true ) {
-      // 1. Find intersection of ray with plane focal
-       float t = ( -mFocalDist - _R.P.z ) / ( _R.T.z );    
-       pt Fp = P( _R.P, t, _R.T );
+        // 1. Find intersection of ray with plane focal
+         float t = ( -mFocalDist - _R.P.z ) / ( _R.T.z );    
+         pt Fp = P( _R.P, t, _R.T );
+           
+         //  2. Randomize a point around the lens (eye)
+         pt deye = new pt();
+         float dr = sqrt( (float)Math.random() );
+         float dt = 2*3.14157*(float)Math.random();
+         deye.x = _R.P.x + mRadius*dr*cos(dt);
+         deye.y = _R.P.y + mRadius*dr*sin(dt);
+         deye.z = _R.P.z;     
+     
+         // Use as ray the ray between point in focal plane and randomized lens point
+         vec newV = new vec(Fp.x - deye.x, Fp.y - deye.y, Fp.z - deye.z);
+         newR.set( deye, newV );
+     
+       print("I SHOULD NOT APPEAR AS WELL! \n");
+     
+        } else {
        
-       // 2. Randomize a point around the lens (eye)
-       pt deye = new pt();
-       float dr = sqrt( (float)Math.random() );
-       float dt = 2*3.14157*(float)Math.random();
-       deye.x = _R.P.x + mRadius*dr*cos(dt);
-       deye.y = _R.P.y + mRadius*dr*sin(dt);
-       deye.z = _R.P.z;     
-     
-       // Use as ray the ray between point in focal plane and randomized lens point
-       vec newV = new vec(Fp.x - deye.x, Fp.y - deye.y, Fp.z - deye.z);
-       newR.set( deye, newV );
-     
-      } else {
-        newR = _R;
-      }
+          if( mMipMap ) { newR = (rayMipMap)_R; }
+          else { newR = _R; }
+        }
       
       
      objPt object_point =  new objPt();
      object_point = closest_intersection( newR );
+     
+     
+     //  If object is hit, shade     
      if( object_point.is_set() ) {
+       
+       // If mipMap, set the other ray's intersection object points as well
+       if( mMipMap == true ) {
+         objPt oUp = new objPt(); oUp = closest_intersection( ((rayMipMap)newR).rUp );
+         objPt oRight = new objPt(); oRight = closest_intersection( ((rayMipMap)newR).rRight );   
+         ((rayMipMap)newR).oUp = oUp;
+         ((rayMipMap)newR).oRight = oRight;       
+       }
+       
+       
        return Shade( object_point, newR, _depth );
      } else {
         return gEnv.mBgColorInt;
@@ -213,13 +242,19 @@
      int pixelColor[] = new int[3];
      float radiance[] = new float[3];
      
-     if( mMinInd != _objPt.objIndex ) { print ("Something fishy \n"); }
      float amb[] = gEnv.mPrimitives[_objPt.objIndex].getAmb();
-     float diff[] = gEnv.mPrimitives[_objPt.objIndex].getDiff( _objPt.P );
-                 
+
+     float diff[] = new float[3];
+     if( mMipMap == false ) {
+       diff = gEnv.mPrimitives[_objPt.objIndex].getDiff( _objPt.P );
+     } else {  
+       diff = gEnv.mPrimitives[_objPt.objIndex].getDiff( _objPt.P, (rayMipMap)_R );
+     }
+    
+     
      // Ambient term     
      radiance[0] = amb[0]*1.0; radiance[1] = amb[1]*1.0;  radiance[2] = amb[2]*1.0;
-     
+          
      for( int i = 0; i < gEnv.mNumLights; ++i ) {
        ray shadow_ray = (gEnv.mLights[i]).calc_shadow_ray( _objPt.P );
        // If no in shadow 
@@ -228,12 +263,12 @@
          // Diffuse term       
          float NL = abs( d( _objPt.N, shadow_ray.T ) );
          float Ilight[] = gEnv.mLights[i].mRGB;
-    
          
          radiance[0] = radiance[0] + Ilight[0]*NL*diff[0];
          radiance[1] = radiance[1] + Ilight[1]*NL*diff[1];
          radiance[2] = radiance[2] + Ilight[2]*NL*diff[2];         
-         
+    
+                  
          // Shiny term         
          if( gEnv.mPrimitives[_objPt.objIndex].getSurface().getType() == sShinyType ) {
            
@@ -252,22 +287,25 @@
            radiance[0] = radiance[0] + Ilight[0]*shiny[0]*ctn;
            radiance[1] = radiance[1] + Ilight[1]*shiny[1]*ctn;
            radiance[2] = radiance[2] + Ilight[2]*shiny[2]*ctn;     
-
+  
            // If reflectance
            if( ((Shiny)gEnv.mPrimitives[_objPt.objIndex].getSurface()).isReflective() && _depth < MAX_DEPTH ) {   
                float Kref = ((Shiny)gEnv.mPrimitives[_objPt.objIndex].getSurface()).mKref;          
+               
                // Get reflected ray
-               ray reflectedRay = new ray();
-               vec Vr = _R.T; Vr.normalize();
-               float c1 = -2*d(Vr,N);
-               vec dir = A( Vr, V( c1, N ) );
-               dir.normalize();
-               //vec dir = M( _R.T, V(2*d(_R.T,N), _R.T) ); dir.normalize();
-               reflectedRay.set( P(_objPt.P, 0.005, dir), dir );
+               ray reflectedRay;
+               if( mMipMap == false ) { reflectedRay = new ray(); }
+               else { reflectedRay = new rayMipMap(); }
+    
+               if( mMipMap == false ) {           
+                 reflectedRay = getReflectedRay( _R, _objPt );
+               } else {
+                 reflectedRay = getReflectedRayMipMap( (rayMipMap)_R, _objPt );
+               }
                int reflection255[] = Trace( reflectedRay, _depth + 1 );
                radiance[0] = radiance[0] + Kref*( (float)reflection255[0] / 255.0 );
                radiance[1] = radiance[1] + Kref*( (float)reflection255[1] / 255.0 );
-               radiance[2] = radiance[2] + Kref*( (float)reflection255[2] / 255.0 );     
+               radiance[2] = radiance[2] + Kref*Kref*( (float)reflection255[2] / 255.0 );     
            }
 
          }
@@ -287,6 +325,49 @@
      return pixelColor;
    }
    
+   /**
+    * @function getReflectedRay
+    */
+   ray getReflectedRay( ray _R, objPt _op ) {
+   
+    ray reflectedRay = new ray();
+    vec Vr = _R.T; Vr.normalize();
+    
+    // When it miss a hit we just store the same ray ... would that be a good idea?
+    if( _op.is_set() == false ) { 
+      reflectedRay.set( _R.P, _R.T );
+      return reflectedRay; 
+    }
+    
+    vec N = _op.N; N.normalize();
+    float c1 = -2*d(Vr,N);
+    vec dir = A( Vr, V( c1, N ) );
+    dir.normalize();
+
+    reflectedRay.set( P(_op.P, 0.005, dir), dir );
+    return reflectedRay;    
+   }
+   
+      
+   /**
+    * @function getReflectedRayMipMap
+    */
+   rayMipMap getReflectedRayMipMap( rayMipMap _R, objPt _op ) {
+   
+    rayMipMap reflectedRay = new rayMipMap();
+    
+    ray rc = getReflectedRay( _R, _op );
+    reflectedRay.set( rc.P, rc.T );
+    
+    // Set the other two rays
+    ray r_up_ref = getReflectedRay( _R.rUp, _R.oUp );
+    ray r_right_ref = getReflectedRay( _R.rRight, _R.oRight );
+    
+    reflectedRay.setRays( r_up_ref, r_right_ref );
+    
+    return reflectedRay;
+    
+   }
    
    /**
     * @function calc_shadow_ray
@@ -332,6 +413,36 @@
        pt Pi = new pt( mdx*( -mnx_2 + _x + xvar), mdy*( mny_2 - _y - yvar ), -mf );
        vec T = V( P, Pi );
        R.set( P, T.normalize() );
+     
+     return R;
+   }
+
+
+   /**
+    * @function ray_through_pixel
+    * @brief Returns a ray that goes from The Eye through pixel(x,y)
+    * @TODO : It works with P 0,0,0, but should set T = PixelPos - Eye (Eye is zero by now so that works)
+    */
+   rayMipMap rayMipMap_through_pixel( int _x, int _y, boolean _centered ) {
+     
+     rayMipMap R = new rayMipMap();
+     pt P = mE; /** Origin */
+
+     ray Rcenter = ray_through_pixel( _x, _y, _centered );
+     R.set( Rcenter.P, Rcenter.T );
+    
+    // Rup
+    ray Rup = new ray();   
+    if( _y == 0 ) { Rup = ray_through_pixel( _x, 1, _centered ); } 
+    else { Rup = ray_through_pixel( _x, _y-1, _centered ); }
+   
+    // Rright
+    ray Rright = new ray();
+   
+    if( _x == mnx - 1 ) { Rright = ray_through_pixel( mnx - 2, _y, _centered ); }
+    else { Rright = ray_through_pixel( _x + 1, _y, _centered ); } 
+      
+    R.setRays( Rup, Rright );
      
      return R;
    }

@@ -12,6 +12,9 @@ int sTriangleType = 1;
 int sSphereType = 2;
 int sInstanceType = 3;
 
+int sMipMapRayType = 0;
+int sSimpleRayType = 1;
+
 int sPointLight = 0;
 int sDiskLight = 1;
 
@@ -19,7 +22,7 @@ int sSurfaceType = 0;
 int sDiffuseType = 1;
 int sShinyType = 2;
 
-int MAX_DEPTH = 4;
+int MAX_DEPTH = 1;
 
 
 Environment gEnv = new Environment();
@@ -99,6 +102,16 @@ void interpreter(String filename) {
     // Skip blank line. 
     if (token.length == 0) {
       continue; 
+    }
+    
+    /** Field of view angle */
+    if (token[0].equals("mipmap")) {
+      String mode = token[1];
+      if( mode.equals("on")) {
+         gRayTracer.mMipMap = true;
+      } else {
+        gRayTracer.mMipMap = false;
+      }
     }
     
     /** Field of view angle */
