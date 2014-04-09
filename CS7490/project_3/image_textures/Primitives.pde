@@ -407,12 +407,78 @@ class Sphere extends Primitive {
     return true;
    }
  }
-  
-    /** get Diffuse color */
+
+  /** get Diffuse color */
   float[] getDiff( pt _P ) {
 
     if( mSurface.mIsTextured == true ) {
-     
+      
+      float tuv[] = new float[2]; tuv = get_tuv( _P );
+      PVector uvd = new PVector();
+      uvd.x = tuv[0]; uvd.y = tuv[1]; uvd.z = 0;
+      PVector c = mSurface.mTexture.color_value( uvd ); 
+      
+      float col[] = new float[3]; 
+      col[0] = c.x / 255.0; col[1] = c.y / 255.0; col[2] = c.z / 255.0;
+      return col;
+    } else {
+      return mSurface.mDiff;
+    }
+  }
+  
+  
+    /** get Diffuse color when using mipMap */
+  float[] getDiff( pt _P, rayMipMap _R ) {
+    
+    if(  mSurface.mIsTextured == true ) {
+
+      // Check that all points are in the object
+      if( _R.oUp.is_set() == false || _R.oRight.is_set() == false ){
+        return getDiff( _P );
+      }  
+      // Check that both fall in the same object (supposedly this one)
+      if( _R.oUp.objIndex != _R.oRight.objIndex ) {
+        return getDiff( _P );
+        
+      }
+      
+      // Now we can proceed
+      float tuv[] = new float[2]; tuv = get_tuv( _P );
+      float tu = tuv[0]; float tv = tuv[1];
+      
+      // Get the other 2 coordinates
+      float tuv1[] = new float[2]; tuv1 = get_tuv( _R.oUp.P );
+      float tu1 = tuv1[0]; float tv1 = tuv1[1];
+
+      float tuv2[] = new float[2]; tuv2 = get_tuv( _R.oRight.P );
+      float tu2 = tuv2[0]; float tv2 = tuv2[1];
+
+      // Get distance between points
+      float dist1 = sqrt( (tu-tu1)*(tu-tu1) + (tv-tv1)*(tv-tv1) );
+      float dist2 = sqrt( (tu-tu2)*(tu-tu2) + (tv-tv2)*(tv-tv2) );
+      
+      PVector uvd = new PVector();
+      uvd.x = tu; uvd.y = tv;
+      if( dist1 > dist2 ) { uvd.z = dist1; } else { uvd.z = dist2; }
+      
+      PVector c = mSurface.mTexture.color_value( uvd ); 
+      float col[] = new float[3]; 
+      col[0] = c.x / 255.0; col[1] = c.y / 255.0; col[2] = c.z / 255.0;
+      return col;
+
+    }  
+      
+    else {  
+      return mSurface.mDiff;
+    }
+  }
+ 
+
+  /** Get tuv : Coordinates of textures in [0 1] range */
+  float[] get_tuv( pt _P ) {
+  
+    float tuv[] = new float[2];
+  
       float dx = _P.x - mC.x;
       float dy = _P.y - mC.y;
       float dz = _P.z - mC.z;
@@ -422,24 +488,11 @@ class Sphere extends Primitive {
       float phi = acos( dz / mR );
       float vi = phi / 3.1416;
 
+      tuv[0]= u;
+      tuv[1] = vi;
+
+    return tuv;
       
-      
-      float cu = (theta + 3.1416 ) / (2*3.1416);
-      float cv = phi / 3.1416;
-      if( cu > 1 || cu < 0 ) { print("CU IS OUT OF RANGE  \n"); }
-      if( cv > 1 || cv < 0 ) { print("CV IS OUT OF RANGE  \n"); }      
-      float widthI = (float)(mSurface.mTexture.image.width);
-      float heightI = (float)(mSurface.mTexture.image.height);      
-      int pu = (int) ( widthI * cu );
-      int pv = (int) ( heightI *(1.0- cv) );
-      
-      PVector c = mSurface.mTexture.get_color( pu, pv, 0); 
-      float col[] = new float[3]; 
-      col[0] = c.x / 255.0; col[1] = c.y / 255.0; col[2] = c.z / 255.0;
-      return col;
-    } else {
-      return mSurface.mDiff;
-    }
   }
   
   
