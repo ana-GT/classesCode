@@ -1,5 +1,5 @@
 # two textured triangles (making a square)
-mipmap on
+
 fov 60
 point_light 0 0 0 1 1 1
 background 0.1 0.1 0.2
@@ -27,10 +27,6 @@ vertex  1 1 0
 texture_coord 0 1
 vertex  0 1 0
 end
-
-
-
-
 
 # sphere 0.5  0 0 -2
 

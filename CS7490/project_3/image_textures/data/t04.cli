@@ -1,5 +1,5 @@
 # textured sphere
-mipmap on
+
 rays_per_pixel 1
 
 fov 60
