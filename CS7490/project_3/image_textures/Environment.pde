@@ -100,7 +100,9 @@ String[] gNamedPrimitiveNames = new String[gMaxNumNamedPrimitives];
       else if( _primitive.getType() == sTriangleType ) {
         mPrimitives[mNumPrimitives] = (Triangle)_primitive;        
       } 
-
+      else if( _primitive.getType() == sInstanceType ) {
+        mPrimitives[mNumPrimitives] = (Instance)_primitive;
+      } 
       mNumPrimitives++;
     }                
 

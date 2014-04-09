@@ -7,11 +7,12 @@
 int screen_width = 600;
 int screen_height = 600;
 
-int sTriangleType = 0;
-int sSphereType = 1;
+int sDefaultType = 0;
+int sTriangleType = 1;
+int sSphereType = 2;
+int sInstanceType = 3;
 
 int sPointLight = 0;
-
 int sDiskLight = 1;
 
 int sSurfaceType = 0;
@@ -170,6 +171,19 @@ void interpreter(String filename) {
       coord_u = Integer.parseInt( token[1] );
       coord_v = Integer.parseInt( token[2] );
     }
+
+    /**< Named_object */
+    else if( token[0].equals("named_object") ) {
+      String name = token[1];
+      gEnv.addNamedPrimitive( prim, name );
+    }
+    
+    /**< Instance */
+    else if( token[0].equals("instance") ) {
+      int ind = gEnv.getInstanceInd( token[1] );
+      Instance inst = new Instance( ind, mMat );
+      gEnv.addPrimitive( inst );
+    }
     
     /** Start reading polygon */
     else if (token[0].equals("begin")) {
@@ -235,8 +249,10 @@ void interpreter(String filename) {
       sphere.set( r, pm[0], pm[1], pm[2] );
       sphere.setSurface( surface );
       
-      gEnv.addPrimitive( sphere );
-      
+      prim = sphere;
+      if( filename != "data/t04.cli" ) {
+        gEnv.addPrimitive( sphere );
+      }
     }
     
     /** Stack operations */
@@ -353,18 +369,6 @@ void interpreter(String filename) {
         print("Finished rendering " + token[1] + "\n");
       }
       save(token[1]);  
-    }
-    
-    /**< Named object */
-    else if( token[0].equals("named_object") ) {
-      String name = token[1];
-      gEnv.addNamedPrimitive( prim, name );
-    }
-
-    /**< Instance */    
-    else if( token[0].equals("instance") ) {
-      int ind = gEnv.getInstanceInd( token[1] );
-      if( gNamedPrimitives[ind].getType() == sSphereType ) { gEnv.addPrimitive( (Sphere)gNamedPrimitives[ind] ); }
     }
     
     

@@ -109,13 +109,15 @@ class Primitive {
   
   public Surface mSurface;
 
-  Primitive() { mType = sSphereType; }
+  Primitive() { mType = sDefaultType; }
   Primitive( int _type ) { mType = _type; }
 
   /**Return type */
   int getType() { return mType; }
   
   void copyData( Primitive _p ) {};
+
+  Surface getSurface() { return mSurface; }
   
   boolean hit( ray _R, hitRecord _rec ) { print("I SHOULD NOT BE CALLED \n");return false; }
 
@@ -344,29 +346,27 @@ class Sphere extends Primitive {
 
     if( mSurface.mIsTextured == true ) {
      
-      // Get spherical coordinates
-      vec Ve = new vec( 1,0,0 );
-      vec Vn = new vec( 0,0,1);
-      vec Vp = V( mC, _P ); Vp.normalize();
-      float phi = acos( -d(Vn, Vp) );
-      float theta = acos( d( Vp, Ve) / sin(phi) ) / (2*3.14157);
+      float dx = _P.x - mC.x;
+      float dy = _P.y - mC.y;
+      float dz = _P.z - mC.z;
+      
+      float theta = atan2( -dz, dx );
+      float u = (theta + 3.1416 ) / (2*3.1416);
+      float phi = acos( -dy / mR );
+      float vi = phi / 3.1416;
       
       
-      float cu;
-      float cv;
       
-      if( d( N(Vn, Ve), Vp ) > 0 ) {
-        cu = theta;
-      }  else {
-        cu = 1.0 - theta;
-      }    
-      
-      cv = phi / 3.14157;      
-
+      float cu = (theta + 3.1416 ) / (2*3.1416);
+      float cv = phi / 3.1416;
+      if( cu > 1 || cu < 0 ) { print("CU IS OUT OF RANGE  \n"); }
+      if( cv > 1 || cv < 0 ) { print("CV IS OUT OF RANGE  \n"); }      
       float widthI = (float)(mSurface.mTexture.image.width);
       float heightI = (float)(mSurface.mTexture.image.height);      
       int pu = (int) ( widthI * cu );
-      int pv = (int) ( heightI * (1.0-cv) );
+      int pv = (int) ( heightI *(1.0- cv) );
+      
+
       color c = mSurface.mTexture.image.pixels[pu + pv*(int)widthI]; //get_color( pu, pv ,0);
       float col[] = new float[3]; 
       col[0] = red(c) / 255.0; col[1] = green(c) / 255.0; col[2] = blue(c) / 255.0;
@@ -389,6 +389,113 @@ class Sphere extends Primitive {
   }
   
 };
+
+/**********************
+ * @class Instance
+ **********************/
+class Instance extends Primitive {
+  
+  public int  mPInd;
+  public PMatrix3D mTwo;
+  public PMatrix3D mTow;
+  
+  /**< Constructor */
+  Instance() {
+    super( sInstanceType );
+    mPInd = -1; 
+    mTwo = new PMatrix3D();
+    mTow = new PMatrix3D();
+  }
+
+  /**< Constructor 2*/
+  Instance( int _ind, PMatrix3D _Two ) {
+    super( sInstanceType );
+    mPInd = _ind; 
+    mTwo = _Two.get();
+    mTow = mTwo.get(); mTow.invert();
+    print("mTwo: ");
+    mTwo.print();
+    print("mTow: ");
+    mTow.print();    
+  }
+  
+  /**< Get surface */
+  Surface getSurface() {
+    return gNamedPrimitives[mPInd].getSurface();
+  }  
+    
+    
+  /** get Diffuse color */
+  float[] getDiff( pt _P ) {
+    
+    // Convert point to canonical one
+    PVector P = new PVector( _P.x, _P.y, _P.z ); 
+    PVector Pcan = new PVector();
+    mTow.mult( P, Pcan ); 
+    pt Pn = new pt( Pcan.x, Pcan.y, Pcan.z );
+   
+    return gNamedPrimitives[mPInd].getDiff( Pn );
+  }
+  
+  /** get Ambience color */
+  float[] getAmb() {
+    return gNamedPrimitives[mPInd].getAmb();
+  }
+
+  /**< hit function */
+  boolean hit( ray _R, hitRecord _rec ) {
+   PVector res = new PVector();
+   PVector p1 = new PVector( _R.P.x, _R.P.y, _R.P.z );
+   float[] p2 = new float[4]; p2[0] = _R.T.x; p2[1] =  _R.T.y; p2[2] =  _R.T.z; p2[3] = 0;
+   float[] res2 = new float[4];
+   mTow.mult( p1, res ); 
+   mTow.mult( p2, res2 );
+   
+   pt P2 = new pt( res.x, res.y, res.z ); vec V2 = new vec(res2[0], res2[1], res2[2]);
+   ray R = new ray(); R.set( P2, V2 );
+   boolean b = gNamedPrimitives[mPInd].hit( R, _rec );
+    
+    if( b == true ) {
+    PMatrix3D mt = mTow.get(); mt.transpose();
+    
+    PVector res3 = new PVector();
+    PVector p3 = new PVector( _R.P.x + _R.T.x*_rec.dist, _R.P.x + _R.T.y*_rec.dist, _R.P.x + _R.T.z*_rec.dist );
+
+    _rec.point = new pt( p3.x, p3.y, p3.z );
+    
+    PVector n4 = new PVector( _rec.normal.x, _rec.normal.y, _rec.normal.z );
+    PVector res4 = new PVector();
+    mt.mult(n4, res4);
+    _rec.normal.x = res4.x; _rec.normal.y = res4.y; _rec.normal.z = res4.z; 
+    }
+    
+    return b;
+  }
+
+  /** @function copyData */
+  void copyData( Instance _instance ) {
+    mPInd = _instance.mPInd;
+    mTwo = _instance.mTwo;
+    mTow = _instance.mTow;
+  }
+
+  /**
+   * @function printInfo
+   */
+  void printInfo() {
+    print("Primitive Instance \n");
+    print("Two: \n");
+    mTwo.print();
+    print("Tow: \n");
+    mTow.print();
+    print("Global primitive index: " + mPInd + "\n");
+  }
+  
+};
+
+
+
+
 
 /***********************
  * @class hitRecord

@@ -235,10 +235,10 @@
          radiance[2] = radiance[2] + Ilight[2]*NL*diff[2];         
          
          // Shiny term         
-         if( gEnv.mPrimitives[_objPt.objIndex].mSurface.getType() == sShinyType ) {
+         if( gEnv.mPrimitives[_objPt.objIndex].getSurface().getType() == sShinyType ) {
            
-           float shiny[] = ((Shiny)gEnv.mPrimitives[_objPt.objIndex].mSurface).mSpec;
-           float specPower = ((Shiny)gEnv.mPrimitives[_objPt.objIndex].mSurface).mSpecPower;
+           float shiny[] = ((Shiny)gEnv.mPrimitives[_objPt.objIndex].getSurface()).mSpec;
+           float specPower = ((Shiny)gEnv.mPrimitives[_objPt.objIndex].getSurface()).mSpecPower;
            
            vec Lm = shadow_ray.T; Lm.normalize();
            vec N = _objPt.N; N.normalize();
@@ -254,8 +254,8 @@
            radiance[2] = radiance[2] + Ilight[2]*shiny[2]*ctn;     
 
            // If reflectance
-           if( ((Shiny)gEnv.mPrimitives[_objPt.objIndex].mSurface).isReflective() && _depth < MAX_DEPTH ) {   
-               float Kref = ((Shiny)gEnv.mPrimitives[_objPt.objIndex].mSurface).mKref;          
+           if( ((Shiny)gEnv.mPrimitives[_objPt.objIndex].getSurface()).isReflective() && _depth < MAX_DEPTH ) {   
+               float Kref = ((Shiny)gEnv.mPrimitives[_objPt.objIndex].getSurface()).mKref;          
                // Get reflected ray
                ray reflectedRay = new ray();
                vec Vr = _R.T; Vr.normalize();
