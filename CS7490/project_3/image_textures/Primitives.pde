@@ -350,11 +350,16 @@ class Sphere extends Primitive {
       float dy = _P.y - mC.y;
       float dz = _P.z - mC.z;
       
-      float theta = atan2( -dz, dx );
-      float u = (theta + 3.1416 ) / (2*3.1416);
-      float phi = acos( -dy / mR );
-      float vi = phi / 3.1416;
+      //float theta = atan2( -dz, dx );
+     // float u = (theta + 3.1416 ) / (2*3.1416);
+      //float phi = acos( -dy / mR );
+      //float vi = phi / 3.1416;
       
+      float theta = atan2( -dy, dx );
+      float u = (theta + 3.1416 ) / (2*3.1416);
+      float phi = acos( dz / mR );
+      float vi = phi / 3.1416;
+
       
       
       float cu = (theta + 3.1416 ) / (2*3.1416);
