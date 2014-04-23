@@ -305,7 +305,7 @@
                int reflection255[] = Trace( reflectedRay, _depth + 1 );
                radiance[0] = radiance[0] + Kref*( (float)reflection255[0] / 255.0 );
                radiance[1] = radiance[1] + Kref*( (float)reflection255[1] / 255.0 );
-               radiance[2] = radiance[2] + Kref*Kref*( (float)reflection255[2] / 255.0 );     
+               radiance[2] = radiance[2] + Kref*Kref*( (float)reflection255[2] / 255.0 );  
            }
 
          }

@@ -9,8 +9,9 @@
    public ImageTexture mTexture;
    public boolean mIsTextured;
    public int mNoise;
+   public int mMaterialType; 
    
-   Surface() { mType = sSurfaceType; mIsTextured = false; mNoise = 0; }
+   Surface() { mType = sSurfaceType; mIsTextured = false; mNoise = 0; mMaterialType = sNoType; }
    Surface( int _type ) { mType = _type; mIsTextured = false; }
    
    int getType() { return mType; }
@@ -35,6 +36,9 @@
    
    /** Set Noise */
    void setNoise( int _noise ) { mNoise = _noise; }
+   
+   /** Material type */
+   void setMaterialType( int _materialType ) { mMaterialType = _materialType; }
    
    void printInfo() {
      print( "\t Diffuse Coeff: " + mDiff[0] +", "+mDiff[1]+", "+mDiff[2] + "\n");
@@ -426,21 +430,18 @@ class Sphere extends Primitive {
       return col;
     } else {
       
-      // Use noise
+      /** Use noise */
       if( mSurface.mNoise != 0 ) {
-        float noise = 0;
-        for( int i = 0; i <= mSurface.mNoise; ++i ) {
-           float f = pow(2.0,i);
-           noise = noise + (1.0/f)*abs( noise_3d( _P.x*f, _P.y*f, _P.z*f ) );          
-        }
+          float f = mSurface.mNoise;
+          // Noise goes from [-1,1]. We move it to go on interval [0,1]
+           float noise = (1.0 + noise_3d( _P.x*f, _P.y*f, _P.z*f ) ) / 2.0;        
         
-        float diff[] = new float[3];
+          float diff[] = new float[3];
           diff[0] = mSurface.mDiff[0]*noise;
           diff[1] = mSurface.mDiff[1]*noise;
           diff[2] = mSurface.mDiff[2]*noise;
           return diff;
-        
-        
+                
       } else {
         return mSurface.mDiff;
       }

@@ -22,6 +22,11 @@ int sSurfaceType = 0;
 int sDiffuseType = 1;
 int sShinyType = 2;
 
+int sNoType = 0;
+int sWoodType = 1;
+int sMarbleType = 2;
+int sStoneType = 3;
+
 int MAX_DEPTH = 1;
 
 
@@ -179,6 +184,21 @@ void interpreter(String filename) {
     /** Noise */
     else if( token[0].equals("noise") ) {
       surface.setNoise( Integer.parseInt( token[1] ) );
+    }
+
+    /** Marble */
+    else if( token[0].equals("marble") ) {
+      surface.setMaterialType( sMarbleType );
+    }
+
+    /** Wood */
+    else if( token[0].equals("wood") ) {
+      surface.setMaterialType( sWoodType );
+    }
+    
+    /** Stone */
+    else if( token[0].equals("stone") ) {
+      surface.setMaterialType( sStoneType );
     }
 
 
