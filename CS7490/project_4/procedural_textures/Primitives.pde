@@ -430,22 +430,37 @@ class Sphere extends Primitive {
       return col;
     } else {
       
+      float noise;
+      
       /** Use noise */
       if( mSurface.mNoise != 0 ) {
           float f = mSurface.mNoise;
           // Noise goes from [-1,1]. We move it to go on interval [0,1]
-           float noise = (1.0 + noise_3d( _P.x*f, _P.y*f, _P.z*f ) ) / 2.0;        
-        
+          noise = (1.0 + noise_3d( _P.x*f, _P.y*f, _P.z*f ) ) / 2.0;        
+          
           float diff[] = new float[3];
           diff[0] = mSurface.mDiff[0]*noise;
           diff[1] = mSurface.mDiff[1]*noise;
           diff[2] = mSurface.mDiff[2]*noise;
           return diff;
-                
-      } else {
-        return mSurface.mDiff;
+          
       }
+                 
+       /** Use marble */
+       // Ideas from: http://www.cs.uml.edu/~haim/teaching/cg/resources/presentations/427/texture_mapping.pdf
+      else if( mSurface.mMaterialType == sMarbleType ) { 
+         float val = _P.x + 3.0*turbulence( _P.x, _P.y, _P.z );      
+         noise = sin( 3.14157*val );
+         return marble_color( noise );     
+      }   
+                 
+      else {
+        return mSurface.mDiff;        
+      }
+      
+
     }
+    
   }
   
   

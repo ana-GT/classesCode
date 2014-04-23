@@ -1,5 +1,49 @@
 // Classic Perlin noise, 3D version
 
+/**
+ * @function marble_color
+ */
+float[] marble_color( float n ) {
+  
+  float []c = new float[3];
+  
+ float [] c1 = new float[3]; c1[0] = 0.1; c1[1] = 0.1; c1[2] = 0.0;
+ float [] c2 = new float[3]; c2[0] = 0.9; c2[1] = 0.6; c2[2] = 0.6;
+ float [] dc = new float[3]; for( int i = 0; i < 3; ++i ) { dc[i] = c2[i] - c1[i]; }
+
+  float f = sqrt( n + 1.0 )*0.7071;
+  c[1] = c1[1] + dc[1]*f;
+  f = sqrt(f);
+  c[0] = c1[0] + dc[0]*f;
+  c[2] = c1[2] + dc[2]*f;  
+ 
+  return c;
+}
+
+/**
+ * @function turbulence
+ * @brief From Siggraph 92, notes of course 23
+ */
+float turbulence( float x, float y, float z ) {
+
+  float noise = 0;
+  float nx = x + 123.456;
+  float ny = y; float nz = z;
+  
+  float minF = 1.0;
+  float maxF = 600;
+  float f;
+  
+  for( f = minF; f < maxF; f = f*2.0 ) {
+    noise = noise + (1.0/f)*abs( noise_3d(nx, ny, nz) );
+    nx = nx*2.0;
+    ny = ny*2.0;
+    nz = nz*2.0;    
+  }
+  
+  return noise - 0.3;
+}
+
 float noise_3d(float x, float y, float z) {
   
   // make sure we've initilized table
