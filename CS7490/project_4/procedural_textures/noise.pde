@@ -7,10 +7,10 @@ import java.util.ArrayList;
  * @function stone_color
  * @brief 
  */
-float[] stone_color( float[] D ) {
+float[] stone_color( float[] D, float _x, float _y, float _z ) {
 
   // Cement
- float [] c1 = new float[3]; c1[0] = 0.8; c1[1] = 0.8; c1[2] = 0.8;
+ float [] c1 = new float[3]; c1[0] = 0.75; c1[1] = 0.75; c1[2] = 0.75;
  // Tile
  float [] c2 = new float[3]; c2[0] = 0.82; c2[1] = 0.41; c2[2] = 0.12  ;  
  //float [] c2 = new float[3]; c2[0] = 250.0 / 255.0; c2[1] = 128.0/255.0; c2[2] = 114.0/255.0  ;  
@@ -21,10 +21,10 @@ float[] stone_color( float[] D ) {
   float crack_thresh = 0.03;
   float noise = D[1] - D[0];
      if( noise < crack_thresh && noise > -1*crack_thresh ) {
-       Random rand = new Random( (int)D[2] );
-       float p = rand.nextFloat();
-       float f = 5;
-       float n = noise_3d( p*f, p*f, p*f );
+       float f = 60.0;
+       float n = noise_3d( f*_x, f*_y, f*_z )*0.5 + 0.5;
+       n = 0.25 + 0.75*n; // Default no less than 25% of original color
+       
        c[0] = c1[0]*n;
        c[1] = c1[1]*n;
        c[2] = c1[2]*n;     
@@ -238,7 +238,7 @@ class worley_noise {
   /**< get_noise (distance to the nth-nearest feature */
   float[] get_noise( float _x, float _y, float _z ) {
         
-    float[] dist = new float[3];
+    float[] dist = new float[6]; // D1, D2, IND, PX, PY, PZ (CLOSEST POINT)
     
     // 1. Get the cube where the point lives
     int x,y,z;
@@ -252,19 +252,22 @@ class worley_noise {
     // Get distances inside the central voxel 
     ArrayList<Float> allDists = new ArrayList<Float>(); 
     ArrayList<Integer> allInds = new ArrayList<Integer>();     
+    ArrayList<pt> allPts = new ArrayList<pt>();      
         
     for( int i = -1; i <= 1; ++i ) {
       for( int j = -1; j <=1; ++j ) {
         for( int k = -1; k <=1; ++k ) { 
           ArrayList<Float> dists2 = new ArrayList<Float>();          
-          ArrayList<Integer> inds2 = new ArrayList<Integer>();          
+          ArrayList<Integer> inds2 = new ArrayList<Integer>();
+          ArrayList<pt> points = new ArrayList<pt>();          
           dists2  = getVoxelDists( x + i, y + j, z + k, 
-                                  _x, _y, _z, inds2);
+                                  _x, _y, _z, inds2, points );
                                   
           // Store                        
           for( int m = 0; m < dists2.size(); ++m ) {
             allDists.add( dists2.get(m) );
             allInds.add( inds2.get(m) );
+            allPts.add( points.get(m) );
           }                        
                                   
         }
@@ -272,13 +275,14 @@ class worley_noise {
     }
   
     // Check the first smallest
-    float MIN_DIST = 10000; int MIN_INDEX = 0;
+    float MIN_DIST = 10000; int MIN_INDEX = 0; pt MIN_PT = new pt();
     float MIN2_DIST = 10000;
-    float d; int ind;
+    float d; int ind; pt pi = new pt();
     for( int i = 0; i < allDists.size(); ++i ) {
       d = allDists.get(i);
       ind = allInds.get(i);
-      if( d < MIN_DIST ) { MIN_DIST = d;  MIN_INDEX = ind; }
+      pi = allPts.get(i);
+      if( d < MIN_DIST ) { MIN_DIST = d;  MIN_INDEX = ind; MIN_PT = pi; }
     }
     
     // Check the second smallest
@@ -291,13 +295,18 @@ class worley_noise {
     dist[0] = sqrt(MIN_DIST);
     dist[1] = sqrt(MIN2_DIST);
     dist[2] = MIN_INDEX;
+    
+    dist[3] = MIN_PT.x;
+    dist[4] = MIN_PT.y;
+    dist[5] = MIN_PT.z;
+    
     return dist;
   } 
   
   /**< checkVoxel */
   ArrayList<Float> getVoxelDists( int x, int y, int z, 
                                    float _x, float _y, float _z,
-                                  ArrayList<Integer>inds2 ) {
+                                  ArrayList<Integer>inds2, ArrayList<pt> _pts ) {
 
     ArrayList<Float> dists2 = new ArrayList<Float>();
     int num_points;
@@ -321,6 +330,7 @@ class worley_noise {
     
     dists2.add( d2 );
     inds2.add( i );
+    _pts.add( new pt( fp[0], fp[1], fp[2]) );
   }
 
     return dists2;

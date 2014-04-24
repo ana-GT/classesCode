@@ -478,10 +478,11 @@ class Sphere extends Primitive {
 
      /** Use stone */
      else if( mSurface.mMaterialType == sStoneType ) {
-     float[] diff = new float[3];
+     float[] diff = new float[6];
      worley_noise wn = new worley_noise();
+     pt nearestPoint = new pt();
      float[] dist = wn.get_noise( _P.x, _P.y, _P.z );
-     return stone_color( dist ); 
+     return stone_color( dist, _P.x, _P.y, _P.z ); 
      }     
                  
                  
