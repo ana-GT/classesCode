@@ -315,7 +315,7 @@ class worley_noise {
     seedRandom( x, y, z );
     
    // Random number is then used for a number of feature points inside the cube 
-   num_points = floor( lerp( 2, 10, rand.nextFloat() ) ); 
+   num_points = floor( lerp( 2, 12, rand.nextFloat() ) ); 
  
   // Random number generator is used again to find coordinates of those feature points
   for( int i = 0; i < num_points; ++i ) {

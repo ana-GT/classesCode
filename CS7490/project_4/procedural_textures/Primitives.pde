@@ -447,7 +447,6 @@ class Sphere extends Primitive {
       }
                  
        /** Use marble */
-       // Ideas from: http://www.cs.uml.edu/~haim/teaching/cg/resources/presentations/427/texture_mapping.pdf
       else if( mSurface.mMaterialType == sMarbleType ) { 
          float val = _P.x + 3.0*turbulence( _P.x, _P.y, _P.z );      
          noise = sin( 3.14157*val );
