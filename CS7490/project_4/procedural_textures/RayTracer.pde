@@ -94,9 +94,6 @@
            } else {
 
              ray R = ray_through_pixel( x,y, true );
-                          if( x == 115 && y == 389 ) {
-              print( "Ray: Point: " + R.P.x + " " +  R.P.y+ " " + R.P.z + " vector: "+ R.T.x + " "+  R.T.y + " " + R.T.z );
-             }
              pixelColor = Trace( R, 0 );
              
            }

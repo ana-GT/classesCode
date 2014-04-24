@@ -453,6 +453,35 @@ class Sphere extends Primitive {
          noise = sin( 3.14157*val );
          return marble_color( noise );     
       }   
+     
+     /** Use wood */
+     else if( mSurface.mMaterialType == sWoodType ) {
+     
+       // Cylindric coordinates
+       float s = atan2( _P.y, _P.x );
+       if( s < 0 ) { s =  s + 2.0*3.14157; }
+       s = s / (2*3.1416);
+       float t = _P.z;
+       t = abs(t) / mR;
+       
+       
+       float r = sqrt( abs(_P.x*_P.x) + abs(_P.y*_P.y) );
+       if( r > 1 && r < 1.0001 ) { r = 1; } // clamp
+       r = r / mR;
+
+       float f = 1.0;
+       float A = 0.25;
+       noise = noise_3d( f*_P.x, f*_P.y, f*_P.z );      
+       return wood_color( r + A*(noise) );
+       
+     } 
+
+     /** Use stone */
+     else if( mSurface.mMaterialType == sStoneType ) {
+     
+       return mSurface.mDiff;
+     }     
+                 
                  
       else {
         return mSurface.mDiff;        

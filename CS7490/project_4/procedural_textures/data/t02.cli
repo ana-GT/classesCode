@@ -17,7 +17,7 @@ diffuse   0.8 0.8 0.8   .2 .2 .2
 
 push
 translate 0 0 -4
-rotate 45  0 1 0
+rotate 45 0 1 0
 instance wood_sphere
 pop
 

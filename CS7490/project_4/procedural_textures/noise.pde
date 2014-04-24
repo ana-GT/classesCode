@@ -1,6 +1,27 @@
 // Classic Perlin noise, 3D version
 
 /**
+ * @function wood_color
+ * @brief INPUT SHOULD BE BETWEEN 0 and 1
+ */
+float[] wood_color( float n ) {
+  
+  float []c = new float[3];
+  
+  // Light Wood
+ float [] c1 = new float[3]; c1[0] = 0.54; c1[1] = 0.27; c1[2] = 0.07;
+ // Dark Wood 
+ float [] c2 = new float[3]; c2[0] = 0.82; c2[1] = 0.41; c2[2] = 0.12  ;
+ float [] dc = new float[3]; for( int i = 0; i < 3; ++i ) { dc[i] = c2[i] - c1[i]; }
+
+ float grain = n % 0.09;
+  
+  if( grain > 0.05 ) { return c1; }
+  else{ return c2; }
+
+}
+
+/**
  * @function marble_color
  */
 float[] marble_color( float n ) {

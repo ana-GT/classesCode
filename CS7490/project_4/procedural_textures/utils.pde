@@ -2,6 +2,10 @@
   * @class pt
  */
  
+void printPoint(pt _P ) {
+   print("Point: " + _P.x + ", " + _P.y + ", " + _P.z + "\n");
+}
+ 
 /** @class objPt */
 class objPt {
   public int objIndex;
@@ -15,6 +19,7 @@ class objPt {
     if( objIndex == -1 ) { return false; } 
     else {return true; } 
   }
+  
   
 }; 
 
@@ -153,6 +158,8 @@ class pt { float x=0,y=0,z=0;
    pt div(float f) {x/=f; y/=f; z/=f; return this;};
    pt div(int f) {x/=f; y/=f; z/=f; return this;};
    pt snap(float r) {float f=r/(sqrt(sq(x)+sq(y)+sq(z))); x*=f; y*=f; z*=f; return this;};
+   
+   
    }
  
 /**  point functions */
