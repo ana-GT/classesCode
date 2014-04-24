@@ -1,5 +1,45 @@
 // Classic Perlin noise, 3D version
+import java.util.Random;
+import java.util.List;
+import java.util.ArrayList;
 
+/**
+ * @function stone_color
+ * @brief 
+ */
+float[] stone_color( float[] D ) {
+
+  // Cement
+ float [] c1 = new float[3]; c1[0] = 0.8; c1[1] = 0.8; c1[2] = 0.8;
+ // Tile
+ float [] c2 = new float[3]; c2[0] = 0.82; c2[1] = 0.41; c2[2] = 0.12  ;  
+ //float [] c2 = new float[3]; c2[0] = 250.0 / 255.0; c2[1] = 128.0/255.0; c2[2] = 114.0/255.0  ;  
+ 
+
+  float []c = new float[3];
+     
+  float crack_thresh = 0.03;
+  float noise = D[1] - D[0];
+     if( noise < crack_thresh && noise > -1*crack_thresh ) {
+       Random rand = new Random( (int)D[2] );
+       float p = rand.nextFloat();
+       float f = 5;
+       float n = noise_3d( p*f, p*f, p*f );
+       c[0] = c1[0]*n;
+       c[1] = c1[1]*n;
+       c[2] = c1[2]*n;     
+       return c;      
+     }
+     
+     else {
+       Random rand = new Random( (int)D[2] );
+       c[0] = c2[0]*rand.nextFloat();
+       c[1] = c2[1]*rand.nextFloat();
+       c[2] = c2[2]*rand.nextFloat();     
+       return c;
+     }
+} 
+     
 /**
  * @function wood_color
  * @brief INPUT SHOULD BE BETWEEN 0 and 1
@@ -182,6 +222,122 @@ double mix(double a, double b, double t) {
 double fade(double t) {
   return t*t*t*(t*(t*6-15)+10);
 }
+
+/**
+ * @class worley_noise
+ */
+class worley_noise {
+
+  Random rand;
+  
+  /**< Constructor */  
+  worley_noise() {
+    rand = new Random();
+  }
+    
+  /**< get_noise (distance to the nth-nearest feature */
+  float[] get_noise( float _x, float _y, float _z ) {
+        
+    float[] dist = new float[3];
+    
+    // 1. Get the cube where the point lives
+    int x,y,z;
+    x = floor(_x);
+    y = floor(_y);
+    z = floor(_z);
+    
+    
+    for( int i = 0; i < 2; ++i ) { dist[i] = 0; }
+    
+    // Get distances inside the central voxel 
+    ArrayList<Float> allDists = new ArrayList<Float>(); 
+    ArrayList<Integer> allInds = new ArrayList<Integer>();     
+        
+    for( int i = -1; i <= 1; ++i ) {
+      for( int j = -1; j <=1; ++j ) {
+        for( int k = -1; k <=1; ++k ) { 
+          ArrayList<Float> dists2 = new ArrayList<Float>();          
+          ArrayList<Integer> inds2 = new ArrayList<Integer>();          
+          dists2  = getVoxelDists( x + i, y + j, z + k, 
+                                  _x, _y, _z, inds2);
+                                  
+          // Store                        
+          for( int m = 0; m < dists2.size(); ++m ) {
+            allDists.add( dists2.get(m) );
+            allInds.add( inds2.get(m) );
+          }                        
+                                  
+        }
+      }
+    }
+  
+    // Check the first smallest
+    float MIN_DIST = 10000; int MIN_INDEX = 0;
+    float MIN2_DIST = 10000;
+    float d; int ind;
+    for( int i = 0; i < allDists.size(); ++i ) {
+      d = allDists.get(i);
+      ind = allInds.get(i);
+      if( d < MIN_DIST ) { MIN_DIST = d;  MIN_INDEX = ind; }
+    }
+    
+    // Check the second smallest
+    for( int i = 0; i < allDists.size(); ++i ) {
+      d = allDists.get(i);
+      if( d > MIN_DIST && d < MIN2_DIST ) { MIN2_DIST = d; }
+    }    
+  
+    // Store the first distance!
+    dist[0] = sqrt(MIN_DIST);
+    dist[1] = sqrt(MIN2_DIST);
+    dist[2] = MIN_INDEX;
+    return dist;
+  } 
+  
+  /**< checkVoxel */
+  ArrayList<Float> getVoxelDists( int x, int y, int z, 
+                                   float _x, float _y, float _z,
+                                  ArrayList<Integer>inds2 ) {
+
+    ArrayList<Float> dists2 = new ArrayList<Float>();
+    int num_points;
+    
+    // Index of the cube is used to seed a random number generator  
+    seedRandom( x, y, z );
+    
+   // Random number is then used for a number of feature points inside the cube 
+   num_points = floor( lerp( 2, 10, rand.nextFloat() ) ); 
+ 
+  // Random number generator is used again to find coordinates of those feature points
+  for( int i = 0; i < num_points; ++i ) {
+    
+    float []fp = new float[3];
+    fp[0] = x + rand.nextFloat();
+    fp[1] = y + rand.nextFloat();
+    fp[2] = z + rand.nextFloat();
+    
+    float dx = fp[0]-_x; float dy = fp[1]-_y; float dz = fp[2]-_z;
+    float d2 = dx*dx + dy*dy + dz*dz;
+    
+    dists2.add( d2 );
+    inds2.add( i );
+  }
+
+    return dists2;
+}
+
+
+
+  /**< Set seed */
+  void seedRandom( int x, int y, int z ) {
+    long seed = x* 65536 + y*256 + z;
+    rand.setSeed( seed );
+  }
+  
+
+  
+  
+};
 
 
 
